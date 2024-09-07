@@ -1,12 +1,13 @@
-import { router } from '@inertiajs/react';
+import { router,usePage } from '@inertiajs/react';
 import React, { useRef } from 'react'
 
 const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }) => {
-    // const [temporaryText, setTemporaryText] = useState(searchingText);
+
+    const { url } = usePage();
     const temporaryText = useRef(searchingText); 
     const changePerPage = (e) => {
         e.preventDefault();   
-        router.get(`user?page=1&perPage=${e.target.value}&searchingText=${searchingText}`, {}, {
+        router.get(`${url}?page=1&perPage=${e.target.value}&searchingText=${searchingText}`, {}, {
             onSuccess: () => {
                 temporaryText.current = searchingText;         
             }
@@ -18,7 +19,7 @@ const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            router.get(`user?page=1&perPage=${perPage}&searchingText=${searchingText}`, {}, {
+            router.get(`${url}?page=1&perPage=${perPage}&searchingText=${searchingText}`, {}, {
                 onSuccess: () => {
                     temporaryText.current = searchingText;
                 }
@@ -41,7 +42,7 @@ const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }
 
                 <div className="flex justify-end items-center mr-2">
                     <input
-                        className={`appearance-none block w-60 bg-white ${temporaryText.current === searchingText? "text-black" : "text-red-600" }  border border-gray-200 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500`}
+                        className={`appearance-none block w-60 bg-white focus:outline-none focus:bg-white ${temporaryText.current === searchingText? "text-black border-gray-400 focus:border-blue-500" : "text-red-600 border-red-500 focus:border-red-500" }  border rounded leading-tight `}
                         id="grid-name"
                         name="name"
                         type="text"

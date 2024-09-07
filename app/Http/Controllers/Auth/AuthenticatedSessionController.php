@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\UserCategory;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Authority;
@@ -38,6 +39,8 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         Cache::put('authorities_key', Authority::join('paths', 'authorities.path_id', "=", 'paths.id')->get(), null);
+
+        Cache::put('user_categories_key', UserCategory::where("id", "!=", "1")->get(), null);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

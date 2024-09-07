@@ -80,7 +80,7 @@ const Form = ({
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6">
+            <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6">
                 <h2 className="text-3xl font-semibold mb-5 text-center">
                     {dataProps && dataProps.id
                         ? dataProps.deleted_at

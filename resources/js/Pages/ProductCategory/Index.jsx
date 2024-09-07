@@ -9,21 +9,20 @@ import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 
-const Index = ({ title, authorities, searchingTextProps, paths }) => {
+const Index = ({ title, productCategories, searchingTextProps }) => {
 
     const { flash, errors } = usePage().props;
+
     const defaultValueData = {
         id: "",
-        path_id: "",
         name: "",
-        method: "get,put,post,delete,",
-        role: "admin,user,", 
+        note: "",
     };
 
     const [showForm, setShowForm] = useState(false);
     const [dataProps, setDataProps] = useState(defaultValueData);
 
-    const [perPage, setPerPage]  = useState(authorities.per_page);
+    const [perPage, setPerPage]  = useState(productCategories.per_page);
     const [searchingText, setSearchingText] = useState(searchingTextProps);
     
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -32,9 +31,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
     const handleShowForm = (data) => {
         if (errors) {
             errors.name = "";
-            errors.email = "";            
-            errors.role = "";       
-            errors.password = "";                   
+            errors.note = "";                       
         }
 
         setShowForm(true);
@@ -59,7 +56,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
         setIsProcessing(true);
 
         if (dataProps.id) {
-            router.put(`authority/${dataProps.id}`, dataProps, {
+            router.put(`product-category/${dataProps.id}`, dataProps, {
                 onSuccess: () => {
                     resetForm(true);
                 },
@@ -68,7 +65,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
                 }
             });
         } else {
-            router.post("authority", dataProps, {
+            router.post("product-category", dataProps, {
                 onSuccess: () => {
                     resetForm(true);
                 },
@@ -82,7 +79,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
     const handleDelete = () => {
         setIsProcessing(true);        
     
-        router.delete(`/authority/${dataProps.id}`,  {
+        router.delete(`/product-category/${dataProps.id}`,  {
             onFinish: () => {
                 setShowDeleteConfirmation(false);
                 setIsProcessing(false);                
@@ -90,10 +87,10 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
         });
     }    
 
-    const handleDeleteConfirmation = (authority) => {
+    const handleDeleteConfirmation = (productCategory) => {
         setShowDeleteConfirmation(true);
         setDataProps({
-            ...authority
+            ...productCategory
         });
     }
 
@@ -112,7 +109,6 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
                     action={actionForm}
                     errors={errors}
                     isProcessing={isProcessing}
-                    paths={ paths } 
                 />
             )}
 
@@ -123,7 +119,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
                 onClick={() => handleShowForm(defaultValueData)}
             />            
 
-            <SearchingTable perPage={perPage} setPerPage={setPerPage} searchingText={searchingText} setSearchingText={setSearchingText}/>
+            <SearchingTable perPage={perPage} setPerPage={setPerPage} searchingText={ searchingText } setSearchingText={ setSearchingText } />
             
             <div className="relative overflow-x-auto">
                 <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400">
@@ -133,13 +129,13 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
                                 No
                             </th>
                             <th scope="col" className="px-6 py-3">
-                                Path Name
+                                Name
                             </th>
                             <th scope="col" className="px-6 py-3">
-                                Methods
+                                Note
                             </th>
                             <th scope="col" className="px-6 py-3">
-                                Roles
+                                User
                             </th>
                             <th scope="col" className="px-6 py-3 text-center">
                                 #
@@ -147,35 +143,35 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {authorities.data.map((authority, i) => (
+                        {productCategories.data.map((productCategory, i) => (
                             <tr
                                 key={i}
-                                className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700  ${authority.deleted_at? "line-through bg-yellow-50" : ""}`}
+                                className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700  ${productCategory.deleted_at? "line-through bg-yellow-50" : ""}`}
                             >
                                 <td
                                     scope="row"
                                     className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white "
                                 >
-                                    {(authorities.current_page - 1) * authorities.per_page + i + 1}
+                                    {(productCategories.current_page - 1) * productCategories.per_page + i + 1}
                                 </td>
-                                <td className="px-6 py-4">{authority.name}</td>
-                                <td className="px-6 py-4">{authority.method}</td>
-                                <td className="px-6 py-4">{authority.role}</td>
+                                <td className="px-6 py-4">{productCategory.name}</td>
+                                <td className="px-6 py-4">{productCategory.note}</td>
+                                <td className="px-6 py-4">{productCategory.user.name}</td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
                                         <FaPencilAlt
                                             size={20}
-                                            color={ authority.deleted_at? "#c2bc42" : "green"}
+                                            color={ productCategory.deleted_at? "#c2bc42" : "green"}
                                             className="cursor-pointer"
-                                            onClick={() => handleShowForm(authority)}
+                                            onClick={() => handleShowForm(productCategory)}
                                         />   
                                         {" "} | {" "}
                                         <FaRegTrashAlt
                                             size={20}
-                                            color={ authority.deleted_at? "#e18859" : "red"}
+                                            color={ productCategory.deleted_at? "#e18859" : "red"}
                                             className="cursor-pointer"
                                             onClick={() =>
-                                                handleDeleteConfirmation(authority)
+                                                handleDeleteConfirmation(productCategory)
                                             }
                                         />
                                     </div>
@@ -186,7 +182,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
                 </table>
             </div>
             {showDeleteConfirmation && <DeleteConfirmation setShowDeleteConfirmation={setShowDeleteConfirmation} dataProps={dataProps} handleDelete={handleDelete} isProcessing={isProcessing}/>}            
-            <Pagination data={authorities}></Pagination>
+            <Pagination data={productCategories}></Pagination>
         </AdminLayout>
     );
 };

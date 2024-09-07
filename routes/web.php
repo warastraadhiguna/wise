@@ -1,9 +1,14 @@
 <?php
 
 use App\Http\Controllers\AuthorityController;
+use App\Http\Controllers\PriceCategoryController;
+use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\UnitController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CustomerController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
-// use Illuminate\Foundation\Application;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -32,6 +37,12 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     Route::resource('user', UserController::class);
     Route::resource('authority', AuthorityController::class);
+    Route::resource('unit', UnitController::class);
+    Route::resource('brand', BrandController::class);
+    Route::resource('product-category', ProductCategoryController::class);
+    Route::resource('price-category', PriceCategoryController::class);
+    Route::resource('customer', CustomerController::class);
+    Route::resource('supplier', SupplierController::class);
 
 });
 

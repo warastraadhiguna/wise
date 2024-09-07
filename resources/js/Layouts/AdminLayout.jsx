@@ -5,7 +5,8 @@ import { AiOutlineMenu, AiOutlineClose, AiFillDashboard } from "react-icons/ai";
 import { FaRegUser, FaUsers, FaCriticalRole } from "react-icons/fa";
 import { GrUserExpert } from "react-icons/gr";
 import { IoIosLogOut } from "react-icons/io";
-import { MdPolicy } from "react-icons/md";
+import { MdInventory, MdPolicy } from "react-icons/md";
+import { PiBasketFill } from "react-icons/pi";
 
 const AdminLayout = ({ children, title }) => {
     const { component } = usePage();
@@ -13,8 +14,14 @@ const AdminLayout = ({ children, title }) => {
 
     const [nav, setNav] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+    const [openSubMenu, setOpenSubMenu] = useState(null); 
+
     const toggleDropdown = () => {
         setIsOpen(!isOpen);
+    };
+
+    const handleSubMenuToggle = (index) => {
+        setOpenSubMenu(openSubMenu === index ? null : index); 
     };
 
     const menuItems = [
@@ -28,7 +35,7 @@ const AdminLayout = ({ children, title }) => {
             icon: <FaUsers size={25} className="mr-1" />,
             text: "User",
             componentLink: "User/Index",
-            link: "/user",
+            link: "/user"  
         },
         {
             icon: <MdPolicy size={25} className="mr-1" />,
@@ -36,11 +43,33 @@ const AdminLayout = ({ children, title }) => {
             componentLink: "Authority/Index",
             link: "/authority",
         },        
+        {
+            icon: <MdInventory size={25} className="mr-1" />,
+            text: "Inventories Master",
+            componentLink: "Unit/Index;Brand/Index;ProductCategory/Index;Supplier/Index",
+            link: "#",
+            subMenu: [
+                { text: "Unit", link: "/unit", subComponentLink : "Unit/Index" },
+                { text: "Brand", link: "/brand", subComponentLink : "Brand/Index"  },                
+                { text: "Product Category", link: "/product-category", subComponentLink : "ProductCategory/Index"  },
+                { text: "Supplier", link: "/supplier", subComponentLink : "Supplier/Index"  },                    
+            ],            
+        },
+        {
+            icon: <PiBasketFill size={25} className="mr-1" />,
+            text: "Sales Master",
+            componentLink: "PriceCategory/Index;Customer/Index",
+            link: "#",
+            subMenu: [
+                { text: "Price Category", link: "/price-category", subComponentLink : "PriceCategory/Index" },
+                { text: "Customer", link: "/customer", subComponentLink : "Customer/Index" },                
+            ],            
+        },        
     ];
     // console.log(component);
     return (
         <>
-            <div className="max-w-[1640px] mx-auto flex justify-between items-center p-4 shadow-sm bg-blue-300">
+            <div className="fixed top-0 left-0 w-full max-w-[1640px] mx-auto flex justify-between items-center p-4 shadow-sm bg-blue-300 z-50">
                 {/* Left side */}
                 <div className="flex items-center">
                     <div
@@ -103,54 +132,55 @@ const AdminLayout = ({ children, title }) => {
                 )}
 
                 {/* Side drawer menu */}
-                <div
-                    className={
-                        nav
-                            ? "fixed top-0 left-0 w-[300px] h-screen bg-blue-50 z-10 duration-300"
-                            : "fixed top-0 left-[-100%] w-[300px] h-screen bg-white z-10 duration-300"
-                    }
-                >
-                    <AiOutlineClose
-                        onClick={() => setNav(!nav)}
-                        size={30}
-                        className="absolute right-4 top-4 cursor-pointer"
-                    />
+                <div className={nav ? "fixed top-0 left-0 w-[300px] h-screen bg-blue-50 z-10 duration-300" : "fixed top-0 left-[-100%] w-[300px] h-screen bg-white z-10 duration-300"}>
+                    <AiOutlineClose onClick={() => setNav(!nav)} size={30} className="absolute right-4 top-4 cursor-pointer" />
                     <h2 className="text-2xl p-4">
                         <span className="font-bold">{appName}</span>
                     </h2>
                     <nav>
                         <ul className="flex flex-col text-gray-800">
-                            {menuItems.map(
-                                (
-                                    { icon, text, componentLink, link },
-                                    index
-                                ) => {
-                                    return (
-                                        <div key={index} className="py-2">
-                                            <li
-                                                className={`text-xl flex cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black ${
-                                                    component == componentLink
-                                                        ? "font-semibold text-blue-500"
-                                                        : ""
-                                                }`}
-                                            >
-                                                <Link
-                                                    href={link}
-                                                    className="flex items-center ml-1"
-                                                >
-                                                    {icon} {text}
-                                                </Link>
-                                            </li>
+                            {menuItems.map(({ icon, text, componentLink, link, subMenu }, index) => (
+                                <React.Fragment key={index}>
+                                    <li
+                                        className={`py-2 text-xl flex cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black ${
+                                            componentLink.includes(component)   ? "font-semibold text-blue-500" : ""
+                                        }`}
+                                        onClick={() => handleSubMenuToggle(index)}
+                                    >
+                                        {link === "#" &&
+                                        <div className="flex items-center ml-1">
+                                            {icon} {text}
                                         </div>
-                                    );
-                                }
-                            )}
+                                        }
+                                        {link !== "#" &&
+                                        <Link href={link} className="flex items-center ml-1">
+                                            {icon} {text}
+                                        </Link>
+                                        }                                        
+
+                                    </li>
+                                    {subMenu && (openSubMenu === index || componentLink.includes(component)) && (
+                                        <ul className="ml-8">
+                                            {subMenu.map((subItem, subIndex) => (
+                                                
+                                                <li key={subIndex} className={`py-1 text-xl flex cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black  ${
+                                            subItem.subComponentLink === component   ? "font-extrabold text-blue-400" : ""
+                                        }`}>
+                                                    <Link href={subItem.link} className="flex items-center ml-1">
+                                                        {subItem.text}
+                                                    </Link>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </ul>
                     </nav>
                 </div>
             </div>
 
-            <div className="flex flex-col min-h-screen">
+            <div className="flex flex-col min-h-screen mt-10">
                 <div>
                     <Toaster />
                 </div>
@@ -162,7 +192,7 @@ const AdminLayout = ({ children, title }) => {
                             {title}
                         </div>
                     </div>                        
-                    <div className="container mx-auto bg-white border border-e-emerald-950 p-4">                    
+                    <div className="container mx-auto bg-white border border-emerald-100 p-4">                    
                         <div className="px-3 py-3 ">{children}</div>
                     </div>
                 </main>
