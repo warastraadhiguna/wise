@@ -12,6 +12,8 @@ class SupplierController extends Controller
     public function index()
     {
         $perPage = Request()->input("perPage");
+        $perPage ??= 10;
+
         $searchingText = Request()->input("searchingText");
 
         $data = [
@@ -23,7 +25,11 @@ class SupplierController extends Controller
             ->orWhere('phone', 'LIKE', "%$searchingText%")
             ->orderBy('deleted_at')
             ->orderBy('name')
-            ->paginate($perPage),
+            ->paginate($perPage)
+            ->appends([
+                'perPage' => $perPage,
+                'searchingText' => $searchingText,
+            ]),
             'searchingTextProps' => $searchingText ?? "",
             'priceCategories' => PriceCategory::orderBy('index')->get()
         ];
@@ -60,7 +66,7 @@ class SupplierController extends Controller
     public function update(Request $request, string $id)
     {
         $supplier = Supplier::withTrashed()->findOrFail($id);
-        if($supplier->deleted_at) {
+        if ($supplier->deleted_at) {
             $supplier->restore();
 
             return back()->with("success", 'Data berhasil dipulihkan');

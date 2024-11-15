@@ -1,7 +1,7 @@
 import { Link } from "@inertiajs/react";
 import React from "react";
 
-const Pagination = ({ data }) => {
+const Pagination = ({ data, isHideInformation }) => {
     const links = data.links;
     const currentPage = data.current_page - 1;
     const lastPage = data.last_page;
@@ -12,6 +12,7 @@ const Pagination = ({ data }) => {
         <div className="container mx-auto my-3">
             <div className="grid grid-cols-2 gap-4">
                 <div>
+                {!isHideInformation && 
                     <p  className="hidden md:block">
                         {`Number ${
                             totalData === 0 ? 0 : currentPage * pageSize + 1
@@ -21,6 +22,7 @@ const Pagination = ({ data }) => {
                                 : currentPage * pageSize + pageSize
                         }  From Total ${totalData} Data`}
                     </p>
+                }
                 </div>
 
                 <div className="flex justify-end items-center">

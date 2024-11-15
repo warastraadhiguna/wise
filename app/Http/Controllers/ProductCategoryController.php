@@ -13,6 +13,8 @@ class ProductCategoryController extends Controller
     public function index()
     {
         $perPage = Request()->input("perPage");
+        $perPage ??= 10;
+
         $searchingText = Request()->input("searchingText");
 
         $data = [
@@ -23,7 +25,11 @@ class ProductCategoryController extends Controller
             ->orderBy('name')
             ->where('name', 'LIKE', "%$searchingText%")
             ->orWhere('note', 'LIKE', "%$searchingText%")
-            ->paginate($perPage),
+            ->paginate($perPage)
+            ->appends([
+                'perPage' => $perPage,
+                'searchingText' => $searchingText,
+            ]),
             'searchingTextProps' => $searchingText ?? "",
         ];
 
@@ -51,7 +57,7 @@ class ProductCategoryController extends Controller
     public function update(Request $request, string $id)
     {
         $productCategory = ProductCategory::withTrashed()->findOrFail($id);
-        if($productCategory->deleted_at) {
+        if ($productCategory->deleted_at) {
             $productCategory->restore();
 
             return back()->with("success", 'Data berhasil dipulihkan');

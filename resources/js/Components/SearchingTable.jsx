@@ -1,10 +1,10 @@
-import { router,usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import React, { useRef } from 'react'
 
 const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }) => {
-
-    const { url } = usePage();
     const temporaryText = useRef(searchingText); 
+    const url = window.location.pathname;
+
     const changePerPage = (e) => {
         e.preventDefault();   
         router.get(`${url}?page=1&perPage=${e.target.value}&searchingText=${searchingText}`, {}, {
@@ -43,7 +43,7 @@ const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }
                 <div className="flex justify-end items-center mr-2">
                     <input
                         className={`appearance-none block w-60 bg-white focus:outline-none focus:bg-white ${temporaryText.current === searchingText? "text-black border-gray-400 focus:border-blue-500" : "text-red-600 border-red-500 focus:border-red-500" }  border rounded leading-tight `}
-                        id="grid-name"
+                        id="grid-search-name"
                         name="name"
                         type="text"
                         placeholder='Search & Enter...'

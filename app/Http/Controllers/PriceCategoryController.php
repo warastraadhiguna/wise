@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\PriceCategory;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rules;
-use Illuminate\Support\Facades\Hash;
 
 class PriceCategoryController extends Controller
 {
     public function index()
     {
         $perPage = Request()->input("perPage");
+        $perPage ??= 10;
+
         $searchingText = Request()->input("searchingText");
 
         $data = [
@@ -23,7 +23,11 @@ class PriceCategoryController extends Controller
             ->orderBy('index')
             ->where('name', 'LIKE', "%$searchingText%")
             ->orWhere('note', 'LIKE', "%$searchingText%")
-            ->paginate($perPage),
+            ->paginate($perPage)
+            ->appends([
+                'perPage' => $perPage,
+                'searchingText' => $searchingText,
+            ])            ,
             'searchingTextProps' => $searchingText ?? "",
         ];
 
@@ -53,7 +57,7 @@ class PriceCategoryController extends Controller
     public function update(Request $request, string $id)
     {
         $priceCategory = PriceCategory::withTrashed()->findOrFail($id);
-        if($priceCategory->deleted_at) {
+        if ($priceCategory->deleted_at) {
             $priceCategory->restore();
 
             return back()->with("success", 'Data berhasil dipulihkan');

@@ -13,6 +13,8 @@ class UserController extends Controller
     public function index()
     {
         $perPage = Request()->input("perPage");
+        $perPage ??= 10;
+
         $searchingText = Request()->input("searchingText");
         $data = [
             'title' => 'User List',
@@ -21,7 +23,11 @@ class UserController extends Controller
             ->orderBy('name')
             ->where('name', 'LIKE', "%$searchingText%")
             ->orWhere('email', 'LIKE', "%$searchingText%")
-            ->paginate($perPage),
+            ->paginate($perPage)
+            ->appends([
+                'perPage' => $perPage,
+                'searchingText' => $searchingText,
+            ]),
             'searchingTextProps' => $searchingText ?? "",
         ];
 
@@ -56,7 +62,7 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         $user = User::withTrashed()->findOrFail($id);
-        if($user->deleted_at) {
+        if ($user->deleted_at) {
             $user->restore();
 
             return back()->with("success", 'Data berhasil dipulihkan');

@@ -12,6 +12,8 @@ class CustomerController extends Controller
     public function index()
     {
         $perPage = Request()->input("perPage");
+        $perPage ??= 10;
+
         $searchingText = Request()->input("searchingText");
 
         $data = [
@@ -23,7 +25,11 @@ class CustomerController extends Controller
             ->orWhere('phone', 'LIKE', "%$searchingText%")
             ->orderBy('deleted_at')
             ->orderBy('name')
-            ->paginate($perPage),
+            ->paginate($perPage)
+            ->appends([
+                'perPage' => $perPage,
+                'searchingText' => $searchingText,
+            ]),
             'searchingTextProps' => $searchingText ?? "",
             'priceCategories' => PriceCategory::orderBy('index')->get()
         ];
@@ -62,7 +68,7 @@ class CustomerController extends Controller
     public function update(Request $request, string $id)
     {
         $customer = Customer::withTrashed()->findOrFail($id);
-        if($customer->deleted_at) {
+        if ($customer->deleted_at) {
             $customer->restore();
 
             return back()->with("success", 'Data berhasil dipulihkan');

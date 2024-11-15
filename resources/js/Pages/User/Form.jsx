@@ -1,6 +1,9 @@
 import React from "react";
+import { usePage } from "@inertiajs/react";
 
 const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessing }) => {
+    const { roles } = usePage().props;
+    
     const handleChange = (event) => {
         setDataProps((prevData) => ({
             ...prevData,
@@ -22,7 +25,7 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                             <div className="w-full px-3">
                                 <label
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
-                                    htmlFor="grid-name"
+                                    htmlFor="grid-label-name"
                                 >
                                     Name
                                 </label>
@@ -99,9 +102,12 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                                 </label>
                                 <div className="inline-block relative w-full">
                                     <select className="block appearance-none w-full bg-white text-black border border-gray-200 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" name="role" value={dataProps.role}
-                                    onChange={(event) => handleChange(event)} disabled={ dataProps.deleted_at || isProcessing}>
-                                        <option value="admin">Admin</option>
-                                        <option value="user">User</option>
+                                        onChange={(event) => handleChange(event)} disabled={dataProps.deleted_at || isProcessing}>
+                                        {roles.map((role, index) => (
+                                            <option key={index} value={ role.value }>{ role.label }</option>
+                                        ))}
+                                        
+                                        
                                     </select>
                                     {errors && errors.role && (                      
                                     <div className='text-red-700 text-sm mt-2'>

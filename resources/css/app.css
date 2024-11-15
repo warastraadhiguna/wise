@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+    .min-h-screen {
+        min-height: auto !important;
+        /* Menghilangkan efek min-height saat mencetak */
+    }
+}

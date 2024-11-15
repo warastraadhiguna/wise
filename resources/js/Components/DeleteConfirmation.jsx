@@ -8,7 +8,7 @@ const DeleteConfirmation = ({ setShowDeleteConfirmation, dataProps, handleDelete
           <div className="bg-white relative rounded-md">
               <header className='border-b py-2 px-6 font-bold text-xl'>Confirmation</header>
               <div className="p-6">
-                  <h4>Anda yakin hapus data <strong>{dataProps.name}</strong> { dataProps.deleted_at? "SELAMANYA" : "" }?</h4>
+                  <h4>Anda yakin hapus data <strong>{dataProps.name ?? "ini"}</strong> { dataProps.deleted_at? "SELAMANYA" : "" }?</h4>
                   
                   <div className="flex gap-4 mt-4 justify-end items-center">
                       <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-1' onClick={handleDelete} disabled={ isProcessing }>Yakin</button>
