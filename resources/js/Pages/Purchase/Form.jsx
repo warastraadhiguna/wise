@@ -316,7 +316,7 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
                                     htmlFor="grid-supplier"
                                 >
-                                    Status
+                                    Payment
                                 </label>
                                 <div className="inline-block relative w-full">
                                     <Select

@@ -58,4 +58,19 @@ class Transaction extends Model
     {
         return $this->belongsTo(StoreBranch::class);
     }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function paymentStatus()
+    {
+        return $this->belongsTo(PaymentStatus::class);
+    }
+
+    public function transactionPayment()
+    {
+        return $this->hasMany(TransactionPayment::class);
+    }
 }

@@ -74,4 +74,18 @@ class Purchase extends Model
         return $this->belongsTo(StoreBranch::class);
     }
 
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function paymentStatus()
+    {
+        return $this->belongsTo(PaymentStatus::class);
+    }
+
+    public function purchasePayment()
+    {
+        return $this->hasMany(PurchasePayment::class);
+    }
 }

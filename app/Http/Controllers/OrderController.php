@@ -19,6 +19,10 @@ class OrderController extends Controller
         $perPage ??= 10;
 
         $searchingText = Request()->input("searchingText");
+        $startDate = Request()->input("startDate") ?? Carbon::now()->format('Y-m-d');
+        $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
+
+
         $data = [
             'title' => 'Order List',
             'orders' => Purchase::withTrashed()
@@ -30,6 +34,7 @@ class OrderController extends Controller
                     ->orWhereRaw('IFNULL(suppliers.company_name, "") LIKE ?', ['%%']);
             })
             ->whereNotNull('purchases.order_user_id')
+            ->whereBetween('order_date', [$startDate, $endDate])
             ->orderBy('purchases.approve_order_date')
             ->orderBy('purchases.deleted_at')
             ->orderBy('order_date', 'desc')
@@ -39,6 +44,8 @@ class OrderController extends Controller
                 'searchingText' => $searchingText,
             ]),
             'searchingTextProps' => $searchingText ?? "",
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ];
 
         return Inertia::render("Order/Index", $data);

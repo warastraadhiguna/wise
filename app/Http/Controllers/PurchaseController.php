@@ -21,18 +21,31 @@ class PurchaseController extends Controller
         $perPage ??= 10;
 
         $searchingText = Request()->input("searchingText");
+        $startDate = Request()->input("startDate") ?? Carbon::now()->format('Y-m-d');
+        $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
+
+        $paymentMethod = Request()->input("paymentMethod") ?? "";
+        $status = Request()->input("status") ?? "";
         $data = [
             'title' => 'Purchase List',
             'purchases' => Purchase::withTrashed()
             ->select('purchases.*', 'name', 'company_name')
             ->addSelect(DB::raw('(SELECT SUM(quantity * (price - discount - (price*discount_percent/100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id) as total_amount'))
-            ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails')
+            ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails', 'purchaseDetails.product', 'purchaseDetails.product.unit', 'supplier', 'paymentStatus')
+            ->withSum('purchasePayment', 'amount')
             ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
             ->where(function ($query) {
                 $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ['%%'])
                     ->orWhereRaw('IFNULL(suppliers.company_name, "") LIKE ?', ['%%']);
             })
             ->whereNotNull('purchases.user_id')
+            ->whereBetween('purchase_date', [$startDate, $endDate])
+            ->when($paymentMethod, function ($query) use ($paymentMethod) {
+                return $query->where('payment_status_id', $paymentMethod);
+            })
+            ->when(!empty($status), function ($query) use ($status) {
+                return $status == "approved" ? $query->whereNotNull('approve_purchase_date') : $query->whereNull('approve_purchase_date');
+            })
             ->orderByRaw('CASE WHEN purchases.approve_purchase_date IS NULL THEN 0 ELSE 1 END asc')
             ->orderBy('purchases.purchase_date', 'desc')
             ->orderBy('purchases.approve_order_date')
@@ -44,6 +57,11 @@ class PurchaseController extends Controller
                 'searchingText' => $searchingText,
             ]),
             'searchingTextProps' => $searchingText ?? "",
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'paymentMethod' => $paymentMethod,
+            'status' => $status,
+            'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
         ];
 
         return Inertia::render("Purchase/Index", $data);

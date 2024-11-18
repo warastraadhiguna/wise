@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductPriceRelationController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\PurchaseDetailController;
+use App\Http\Controllers\PurchaseReportController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransactionController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\StoreBranchController;
+use App\Http\Controllers\TransactionReportController;
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [
@@ -68,6 +70,11 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('transaction-detail', TransactionDetailController::class);
 
     Route::resource('product-price-relation', ProductPriceRelationController::class);
+
+
+    Route::get('/purchase-report', [PurchaseReportController::class, 'index']);
+    Route::get('/transaction-report', [TransactionReportController::class, 'index']);
+
 });
 
 

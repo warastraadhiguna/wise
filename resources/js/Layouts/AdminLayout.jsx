@@ -7,7 +7,8 @@ import { GrUserExpert } from "react-icons/gr";
 import { IoIosLogOut } from "react-icons/io";
 import { MdInventory, MdPolicy } from "react-icons/md";
 import { PiBasketFill } from "react-icons/pi";
-import { BiSolidPurchaseTag } from "react-icons/bi";
+import { BiSolidPurchaseTag, BiSolidReport } from "react-icons/bi";
+import { TbReport } from "react-icons/tb";
 
 const AdminLayout = ({ children, title }) => {
     const { component } = usePage();
@@ -95,7 +96,17 @@ const AdminLayout = ({ children, title }) => {
             subMenu: [
                 { text: "Store Branch", link: "/store-branch", subComponentLink : "StoreBranch/Index" },              
             ],            
-        },         
+        },        
+        {
+            icon: <BiSolidReport size={25}  className="mr-1" />,
+            text: "Report",
+            componentLink: "Report/Purchase/Index;Report/Transaction/Index",
+            link: "#",
+            subMenu: [
+                { text: "Purchase", link: "/purchase-report", subComponentLink: "Report/Purchase/Index" },             
+                { text: "Transaction", link: "/transaction-report", subComponentLink : "Report/Transaction/Index" },                    
+            ],            
+        },           
     ];
     // console.log(component);
     return (
@@ -170,50 +181,51 @@ const AdminLayout = ({ children, title }) => {
                     </h2>
                     <nav>
                         <ul className="flex flex-col text-gray-800">
-                            {menuItems.map(({ icon, text, componentLink, link, subMenu }, index) => (
-                                <React.Fragment key={index}>
-                                    <li
-                                        className={`py-2 text-xl flex justify-between items-center cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black ${
-                                            componentLink.includes(component)   ? "font-semibold text-blue-500" : ""
-                                        }`}
-                                        onClick={() => handleSubMenuToggle(index)}
-                                    >
-                                        {link === "#" &&
-                                        <div className="flex items-center ml-1">
-                                            {icon} {text}
-                                        </div>
-                                        }
-                                        {link !== "#" &&
-                                        <Link href={link} className="flex items-center ml-1">
-                                            {icon} {text}
-                                        </Link>
-                                        }                                        
-                                {subMenu && (
-                                    <div className="mr-2">
-                                        {openSubMenu === index ? (
-                                            <AiOutlineDown size={20} />
-                                        ) : (
-                                            <AiOutlineRight size={20} />
-                                        )}
-                                    </div>
-                                )}
-                                    </li>
-                                    {subMenu && (openSubMenu === index || componentLink.includes(component)) && (
-                                        <ul className="ml-8">
-                                            {subMenu.map((subItem, subIndex) => (
+                            {menuItems.map(({ icon, text, componentLink, link, subMenu }, index) => {
+                                const componentsArray = componentLink.split(";");
+                                return (
+                                    <React.Fragment key={index}>
+                                        <li
+                                            className={`py-2 text-xl flex justify-between items-center cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black ${componentsArray.includes(component) ? "font-semibold text-blue-500" : ""
+                                                }`}
+                                            onClick={() => handleSubMenuToggle(index)}
+                                        >
+                                            {link === "#" &&
+                                                <div className="flex items-center ml-1">
+                                                    {icon} {text}
+                                                </div>
+                                            }
+                                            {link !== "#" &&
+                                                <Link href={link} className="flex items-center ml-1">
+                                                    {icon} {text}
+                                                </Link>
+                                            }
+                                            {subMenu && (
+                                                <div className="mr-2">
+                                                    {openSubMenu === index ? (
+                                                        <AiOutlineDown size={20} />
+                                                    ) : (
+                                                        <AiOutlineRight size={20} />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </li>
+                                        {subMenu && (openSubMenu === index || componentLink.includes(component)) && (
+                                            <ul className="ml-8">
+                                                {subMenu.map((subItem, subIndex) => (
                                                 
-                                                <li key={subIndex} className={`py-1 text-xl flex cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black  ${
-                                            subItem.subComponentLink === component   ? "font-extrabold text-blue-400" : ""
-                                        }`}>
-                                                    <Link href={subItem.link} className="flex items-center ml-1">
-                                                        {subItem.text}
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </React.Fragment>
-                            ))}
+                                                    <li key={subIndex} className={`py-1 text-xl flex cursor-pointer w-[80%] rounded-full mx-auto hover:text-white hover:bg-black  ${subItem.subComponentLink === component ? "font-extrabold text-blue-400" : ""
+                                                        }`}>
+                                                        <Link href={subItem.link} className="flex items-center ml-1">
+                                                            {subItem.text}
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </React.Fragment>
+                                )
+                            })}
                         </ul>
                     </nav>
                 </div>

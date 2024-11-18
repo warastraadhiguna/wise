@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PaymentStatus;
-use App\Models\Stock;
-use App\Models\TransactionDetail;
-use App\Models\Customer;
 use Carbon\Carbon;
 use Inertia\Inertia;
+use App\Models\Stock;
+use App\Models\Customer;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Models\PaymentStatus;
+use App\Models\TransactionDetail;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
@@ -20,17 +21,33 @@ class TransactionController extends Controller
         $perPage ??= 10;
 
         $searchingText = Request()->input("searchingText");
+
+        $startDate = Request()->input("startDate") ?? Carbon::now()->format('Y-m-d');
+        $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
+
+        $paymentMethod = Request()->input("paymentMethod") ?? "";
+        $status = Request()->input("status") ?? "";
+
         $data = [
             'title' => 'Transaction List',
             'transactions' => Transaction::withTrashed()
             ->select('transactions.*', 'name', 'company_name')
-            ->with('storeBranch', 'transactionUser', 'approvedUser')
+            ->addSelect(DB::raw('(SELECT SUM(quantity * (price - discount - (price*discount_percent/100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id) as total_amount'))
+            ->with('storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus')
+            ->withSum('transactionPayment', 'amount')
             ->leftJoin('customers', 'transactions.customer_id', '=', 'customers.id')
             ->where(function ($query) {
                 $query->whereRaw('IFNULL(customers.name, "") LIKE ?', ['%%'])
                     ->orWhereRaw('IFNULL(customers.company_name, "") LIKE ?', ['%%']);
             })
             ->whereNotNull('transactions.user_id')
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($paymentMethod, function ($query) use ($paymentMethod) {
+                return $query->where('payment_status_id', $paymentMethod);
+            })
+            ->when(!empty($status), function ($query) use ($status) {
+                return $status == "approved" ? $query->whereNotNull('approve_transaction_date') : $query->whereNull('approve_transaction_date');
+            })
             ->orderByRaw('CASE WHEN transactions.approve_transaction_date IS NULL THEN 0 ELSE 1 END asc')
             ->orderBy('transactions.deleted_at')
             ->orderBy('transaction_date', 'desc')
@@ -40,6 +57,11 @@ class TransactionController extends Controller
                 'searchingText' => $searchingText,
             ]),
             'searchingTextProps' => $searchingText ?? "",
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'paymentMethod' => $paymentMethod,
+            'status' => $status,
+            'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
         ];
 
         return Inertia::render("Transaction/Index", $data);

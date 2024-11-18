@@ -7,11 +7,10 @@ import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
-import { CiShoppingBasket } from "react-icons/ci";
 import dateFormat from "dateformat";
 
-const Index = ({ title, purchases, searchingTextProps }) => {
-
+const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymentMethod, status, paymentStatuses }) => {
+    const url = window.location.pathname;  
     const { flash } = usePage().props;
 
     const defaultValueData = {
@@ -26,6 +25,28 @@ const Index = ({ title, purchases, searchingTextProps }) => {
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const [filters, setFilters] = useState({
+        startDate: startDate,
+        endDate: endDate,
+        paymentMethod: paymentMethod,
+        status: status
+    });
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters({ ...filters, [name]: value });
+    };
+
+    const handleFilterButton = (e) => {
+        setIsProcessing(true);
+        e.preventDefault();
+        router.get(`${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}`, {}, {
+            onFinish: () => {
+                setIsProcessing(false);
+            },
+            
+        });
+    };
     const handleDelete = () => {
         setIsProcessing(true);        
     
@@ -51,6 +72,67 @@ const Index = ({ title, purchases, searchingTextProps }) => {
 
     return (
         <AdminLayout title={title}>
+            <div className="mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4  items-end">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input
+                            type="date"
+                            name="startDate"
+                            value={filters.startDate}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">End Date</label>
+                        <input
+                            type="date"
+                            name="endDate"
+                            value={filters.endDate}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                        <select
+                            name="paymentMethod"
+                            value={filters.paymentMethod}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        >
+                            <option value="">All</option>
+                            {paymentStatuses.map((status, i) => (
+                                <option key={i} value={status.id}>{status.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                            name="status"
+                            value={filters.status}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        >
+                            <option value="">All</option>
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button
+                            type="submit"
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            onClick={handleFilterButton}
+                            disabled={isProcessing}
+                        >
+                            Filter
+                        </button>
+                    </div>
+                </div>
+            </div>                
             <Link href='purchase/create' className="flex items-center ml-1">
                 <MdOutlineAddCircleOutline
                     size={40}
@@ -63,24 +145,24 @@ const Index = ({ title, purchases, searchingTextProps }) => {
             
             <div className="relative overflow-x-auto">
                 <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400">
-                    <thead className="text-xs text-black bpurchase-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-xs text-black border-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-6 py-3" width="2%">
                                 No
-                            </th>
-                            <th scope="col" className="px-6 py-3">
-                                Name - Company Name
-                            </th>                        
-                            <th scope="col" className="px-6 py-3">
+                            </th>                    
+                            <th scope="col" className="px-6 py-3" width="7%">
                                 Store Branch
                             </th>                              
                             <th scope="col" className="px-6 py-3">
+                                Info
+                            </th>                                
+                            <th scope="col" className="px-6 py-3" width="20%">
                                 Order
                             </th>        
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-6 py-3" width="20%">
                                 Purchase
                             </th>       
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="px-6 py-3" width="22%">
                                 Summary
                             </th>                               
                             <th scope="col" className="px-6 py-3 text-center" width="5%">
@@ -100,8 +182,41 @@ const Index = ({ title, purchases, searchingTextProps }) => {
                                 >
                                     {(purchases.current_page - 1) * purchases.per_page + i + 1}
                                 </td>
-                                <td className="px-6 py-4">{purchase.name} - {purchase.company_name}</td>    
-                                <td className="px-6 py-4">{purchase.store_branch.name}</td>                                   
+                                <td className="px-6 py-4">{purchase.store_branch.name}</td>                                 
+                                <td className="px-6 py-4">
+                                        <table className="w-full">
+                                            <tbody>
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        Company
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        {purchase.company_name??"-"}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        Supplier
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        {purchase.supplier? purchase.supplier.name : "-"}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        Payment
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        {purchase.payment_status.name}
+                                                    </td>
+                                                </tr>                                            
+                                            </tbody>
+                                        </table>                                  
+                                </td>    
+
 
                                 
                                 <td className={`px-6 py-4 ${purchase.order_date? '' : 'text-center'}`}>
@@ -133,6 +248,18 @@ const Index = ({ title, purchases, searchingTextProps }) => {
                                                     <td>:</td>
                                                     <td>{purchase.approved_order_user ? purchase.approved_order_user.name : '-'}</td>
                                                 </tr>
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        Note
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        {
+                                                            purchase
+                                                                .order_note
+                                                        }
+                                                    </td>
+                                                </tr>                                                  
                                             </tbody>
                                         </table>
                                     : "-"
@@ -166,6 +293,18 @@ const Index = ({ title, purchases, searchingTextProps }) => {
                                                 <td>:</td>
                                                 <td>{purchase.approved_user ? purchase.approved_user.name : '-'}</td>
                                             </tr>
+                                            <tr>
+                                                <td className="font-semibold">
+                                                    Note
+                                                </td>
+                                                <td>:</td>
+                                                <td>
+                                                    {
+                                                        purchase
+                                                            .purchase_note
+                                                    }
+                                                </td>
+                                            </tr>                                             
                                         </tbody>
                                     </table>
                                 </td>      
@@ -197,6 +336,17 @@ const Index = ({ title, purchases, searchingTextProps }) => {
                                                 <td>:</td>
                                                 <td>Rp. {Number((purchase.total_amount - purchase.discount - (purchase.total_amount * purchase.discount_percent / 100)) + (purchase.total_amount - purchase.discount - (purchase.total_amount * purchase.discount_percent / 100))*purchase.ppn/100).toLocaleString() }</td>
                                             </tr>         
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        Paid
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        Rp.{" "}
+                                                        {Number(purchase.purchase_payment_sum_amount
+                                                        ).toLocaleString()}
+                                                    </td>
+                                                </tr>                                               
                                         </tbody>
                                     </table>
                                 </td>

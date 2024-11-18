@@ -200,7 +200,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
                                     htmlFor="grid-customer"
                                 >
-                                    Status
+                                    Payment
                                 </label>
                                 <div className="inline-block relative w-full">
                                     <Select
