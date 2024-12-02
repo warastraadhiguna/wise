@@ -38,7 +38,7 @@ class TransactionDetailController extends Controller
                 'price' => 'required|numeric',
                 'discount_percent' => 'required|numeric|max:90',
                 'discount' => ['required', 'numeric', function ($attribute, $value, $fail) use ($request) {
-                    if ($value >= $request->price) {
+                    if ($value >= $request->price && $request->price > 0) {
                         $fail('The discount must be less than the price.');
                     }
                 }],

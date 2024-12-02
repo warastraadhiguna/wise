@@ -356,7 +356,9 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                 <tr>
                                     <td></td>
                                     <td></td>
-                                    <td className="print:hidden"></td>
+                                    {purchase.order_date &&
+                                        <td className="print:hidden"></td>
+                                    }
                                     <td></td>
                                     <td></td>
                                     <td></td>

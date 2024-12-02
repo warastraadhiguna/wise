@@ -13,9 +13,9 @@
         <!-- Scripts -->
         @routes
         @viteReactRefresh
-        {{-- @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"]) --}}
-<link rel="stylesheet" href="{{ asset('build/assets/app-B3_peA-p.css') }}">
-<script src="{{ asset('build/assets/app-DNaNsIFz.js') }}" type="module" defer></script>
+        @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+        {{-- <link rel="stylesheet" href="{{ asset('build/assets/app-B3_peA-p.css') }}">
+        <script src="{{ asset('build/assets/app-DNaNsIFz.js') }}" type="module" defer></script> --}}
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

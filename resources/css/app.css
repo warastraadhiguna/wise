@@ -8,3 +8,8 @@
         /* Menghilangkan efek min-height saat mencetak */
     }
 }
+
+
+.css-1pahdxg-control {
+  z-index: 1 !important; /* Pastikan control dropdown tetap di belakang modal */
+}

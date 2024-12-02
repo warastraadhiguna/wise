@@ -2,18 +2,20 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import { Link, router, usePage } from "@inertiajs/react";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { FaPencilAlt, FaRegTrashAlt } from "react-icons/fa";
+import { FaMoneyBill, FaPencilAlt, FaRegTrashAlt } from "react-icons/fa";
 import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
+import TransactionFilter from "@/Components/TransactionFilter";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 import dateFormat from "dateformat";
+import PaymentList from "./PaymentList";
 
-const Index = ({ title, transactions, searchingTextProps,startDate, endDate, paymentMethod, status, paymentStatuses  }) => {
+const Index = ({ title, transactions, searchingTextProps,startDate, endDate, paymentMethod, status, paymentStatuses, paymentStatus  }) => {
 
     const { flash } = usePage().props;
     const url = window.location.pathname;  
-    
+
     const defaultValueData = {
         id: "", 
     };
@@ -24,7 +26,18 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
     const [searchingText, setSearchingText] = useState(searchingTextProps);
     
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [showPaymentList, setShowPaymentList] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [filters, setFilters] = useState({
+        startDate: startDate,
+        endDate: endDate,
+        paymentMethod: paymentMethod,
+        status: status,
+        paymentStatus: paymentStatus
+    });
+
+    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}&paymentStatus=${filters.paymentStatus}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
 
     const handleDelete = () => {
         setIsProcessing(true);        
@@ -44,22 +57,10 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
         });
     }
 
-    const [filters, setFilters] = useState({
-        startDate: startDate,
-        endDate: endDate,
-        paymentMethod: paymentMethod,
-        status: status
-    });
-
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters({ ...filters, [name]: value });
-    };
-
     const handleFilterButton = (e) => {
         setIsProcessing(true);
         e.preventDefault();
-        router.get(`${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}`, {}, {
+        router.get(filterParameter, {}, {
             onFinish: () => {
                 setIsProcessing(false);
             },
@@ -74,77 +75,20 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
 
     return (
         <AdminLayout title={title}>
-            <div className="mb-10">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4  items-end">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                        <input
-                            type="date"
-                            name="startDate"
-                            value={filters.startDate}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">End Date</label>
-                        <input
-                            type="date"
-                            name="endDate"
-                            value={filters.endDate}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Payment Method</label>
-                        <select
-                            name="paymentMethod"
-                            value={filters.paymentMethod}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        >
-                            <option value="">All</option>
-                            {paymentStatuses.map((status, i) => (
-                                <option key={i} value={status.id}>{status.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <select
-                            name="status"
-                            value={filters.status}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        >
-                            <option value="">All</option>
-                            <option value="approved">Approved</option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button
-                            type="submit"
-                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            onClick={handleFilterButton}
-                            disabled={isProcessing}
-                        >
-                            Filter
-                        </button>
-                    </div>
-                </div>
-            </div> 
+            <TransactionFilter filters={filters} setFilters={setFilters} paymentStatuses={paymentStatuses} handleFilterButton={ handleFilterButton} />
             
-            <Link href='transaction/create' className="flex items-center ml-1">
+            <div  className="flex items-center ml-1">
                 <MdOutlineAddCircleOutline
                     size={40}
                     color="blue"
                     className="cursor-pointer ml-3 mb-3"
+                    onClick={() => {
+                        router.visit('transaction/create');
+                    }}
                 />   
-            </Link>            
+            </div>            
 
-            <SearchingTable perPage={perPage} setPerPage={setPerPage} searchingText={ searchingText } setSearchingText={ setSearchingText } />
+            <SearchingTable perPage={perPage} setPerPage={setPerPage} searchingText={searchingText} setSearchingText={setSearchingText} isProcessing={ isProcessing } filterParameter={filterParameter} />
             
             <div className="relative overflow-x-auto">
                 <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400">
@@ -278,7 +222,7 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                                             <tr>
                                                 <td className="font-semibold">Grand Total</td>
                                                 <td>:</td>
-                                                <td>Rp. {Number((transaction.total_amount - transaction.discount - (transaction.total_amount * transaction.discount_percent / 100)) + (transaction.total_amount - transaction.discount - (transaction.total_amount * transaction.discount_percent / 100))*transaction.ppn/100).toLocaleString() }</td>
+                                                <td>Rp. {Number(transaction.grand_total).toLocaleString() }</td>
                                             </tr>         
                                                 <tr>
                                                     <td className="font-semibold">
@@ -287,7 +231,7 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                                                     <td>:</td>
                                                     <td>
                                                         Rp.{" "}
-                                                        {Number(transaction.transaction_payment_sum_amount
+                                                        {Number(transaction.transaction_payments_sum_amount
                                                         ).toLocaleString()}
                                                     </td>
                                                 </tr>                                               
@@ -303,15 +247,32 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                                                 className="cursor-pointer"
                                             />    
                                         </Link>      
-                                        {" "} | {" "}
-                                        {!transaction.approve_transaction_date &&<FaRegTrashAlt
-                                            size={20}
-                                            color={ transaction.deleted_at? "#e18859" : "red"}
-                                            className="cursor-pointer"
-                                            onClick={() =>
-                                                handleDeleteConfirmation(transaction)
-                                            }
-                                        />}
+                                        {!transaction.approve_transaction_date &&
+                                            <React.Fragment>
+                                            {" "} | {" "}
+                                                <FaRegTrashAlt
+                                                size={20}
+                                                color={ transaction.deleted_at? "#e18859" : "red"}
+                                                className="cursor-pointer"
+                                                onClick={() =>
+                                                    handleDeleteConfirmation(transaction)
+                                                }
+                                                    />
+                                            </React.Fragment>
+                                        }{transaction.approve_transaction_date &&
+                                            <React.Fragment>
+                                                {" "} | {" "}
+                                            <FaMoneyBill
+                                                size={20}
+                                                    color={transaction.deleted_at ? "#c2bc42" : "gold"}
+                                                    onClick={() => {
+                                                        setShowPaymentList(true);
+                                                        setSelectedTransaction(transaction);
+                                                    }}
+                                                className="cursor-pointer"
+                                            /> 
+                                            </React.Fragment>
+                                        }
                                         
                                     </div>
                                 </td>
@@ -320,6 +281,7 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                     </tbody>
                 </table>
             </div>
+            {showPaymentList && <PaymentList setShowPaymentList={setShowPaymentList} transaction={selectedTransaction} flash={ flash } />}            
             {showDeleteConfirmation && <DeleteConfirmation setShowDeleteConfirmation={setShowDeleteConfirmation} dataProps={dataProps} handleDelete={handleDelete} isProcessing={isProcessing}/>}            
             <Pagination data={transactions}></Pagination>
         </AdminLayout>

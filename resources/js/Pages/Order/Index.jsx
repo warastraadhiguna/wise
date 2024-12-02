@@ -108,13 +108,16 @@ const Index = ({ title, orders, searchingTextProps,startDate, endDate }) => {
                 </div>
             </div>  
             
-            <Link href='order/create' className="flex items-center ml-1">
+            <div  className="flex items-center ml-1">
                 <MdOutlineAddCircleOutline
                     size={40}
                     color="blue"
                     className="cursor-pointer ml-3 mb-3"
+                    onClick={() => {
+                        router.visit('order/create');
+                    }}
                 />   
-            </Link>            
+            </div>   
 
             <SearchingTable perPage={perPage} setPerPage={setPerPage} searchingText={ searchingText } setSearchingText={ setSearchingText } />
             

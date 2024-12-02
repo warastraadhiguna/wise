@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Stock;
@@ -9,8 +10,11 @@ use App\Models\Customer;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\PaymentStatus;
+use Illuminate\Validation\Rule;
 use App\Models\TransactionDetail;
+use App\Models\TransactionPayment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
@@ -26,6 +30,8 @@ class TransactionController extends Controller
         $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
 
         $paymentMethod = Request()->input("paymentMethod") ?? "";
+        $paymentStatus = Request()->input("paymentStatus") ?? "";
+
         $status = Request()->input("status") ?? "";
 
         $data = [
@@ -33,12 +39,32 @@ class TransactionController extends Controller
             'transactions' => Transaction::withTrashed()
             ->select('transactions.*', 'name', 'company_name')
             ->addSelect(DB::raw('(SELECT SUM(quantity * (price - discount - (price*discount_percent/100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id) as total_amount'))
-            ->with('storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus')
-            ->withSum('transactionPayment', 'amount')
+            ->addSelect(DB::raw('
+                (
+                    (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
+                    - discount 
+                    - (
+                        (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
+                        * discount_percent / 100
+                    )
+                    + (
+                        (
+                            (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
+                            - discount 
+                            - (
+                                (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
+                                * discount_percent / 100
+                            )
+                        ) * ppn / 100
+                    )
+                ) as grand_total
+            '))
+            ->with('storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus', 'transactionPayments', 'transactionPayments.user')
+            ->withSum('transactionPayments', 'amount')
             ->leftJoin('customers', 'transactions.customer_id', '=', 'customers.id')
-            ->where(function ($query) {
-                $query->whereRaw('IFNULL(customers.name, "") LIKE ?', ['%%'])
-                    ->orWhereRaw('IFNULL(customers.company_name, "") LIKE ?', ['%%']);
+            ->where(function ($query) use ($searchingText) {
+                $query->whereRaw('IFNULL(customers.name, "") LIKE ?', ["%$searchingText%"])
+                    ->orWhereRaw('IFNULL(customers.company_name, "") LIKE ?', ["%$searchingText%"]);
             })
             ->whereNotNull('transactions.user_id')
             ->whereBetween('transaction_date', [$startDate, $endDate])
@@ -48,20 +74,34 @@ class TransactionController extends Controller
             ->when(!empty($status), function ($query) use ($status) {
                 return $status == "approved" ? $query->whereNotNull('approve_transaction_date') : $query->whereNull('approve_transaction_date');
             })
+            ->when($paymentStatus, function ($query) use ($paymentStatus) {
+                if ($paymentStatus == 'Paid') {
+                    $query->havingRaw('grand_total = transaction_payments_sum_amount');
+                } elseif ($paymentStatus == 'Unpaid') {
+                    $query->havingRaw('grand_total > transaction_payments_sum_amount');
+                }
+            })
             ->orderByRaw('CASE WHEN transactions.approve_transaction_date IS NULL THEN 0 ELSE 1 END asc')
             ->orderBy('transactions.deleted_at')
             ->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc')
             ->paginate($perPage)
             ->appends([
                 'perPage' => $perPage,
                 'searchingText' => $searchingText,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'paymentMethod' => $paymentMethod,
+                'status' => $status,
+                'paymentStatus' => $paymentStatus,
             ]),
             'searchingTextProps' => $searchingText ?? "",
             'startDate' => $startDate,
             'endDate' => $endDate,
             'paymentMethod' => $paymentMethod,
             'status' => $status,
-            'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
+            'paymentStatus' => $paymentStatus,
+            'paymentStatuses' => PaymentStatus::where("is_sale", "1")->orderBy('index')->get(),
         ];
 
         return Inertia::render("Transaction/Index", $data);
@@ -156,12 +196,66 @@ class TransactionController extends Controller
         $transaction = Transaction::withTrashed()->findOrFail($id);
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
-            $transaction->update([
-                'approved_user_id' => $request->user()->id,
-                'approve_transaction_date' => Carbon::now()
+            $paymentStatus = PaymentStatus::find(Request()->input("payment_status_id"));
+
+            $request->merge([
+                'payment' => (float) $request->input('payment'),
+                'grandTotal' => (float) $request->input('grandTotal'),
             ]);
 
-            redirect()->to("transaction/$transaction->id/edit")->with("success", 'Data berhasil diapprove.');
+            $validator = Validator::make($request->all(), [
+                'customer_id' => 'nullable',
+                'payment_status_id' => 'required',
+                'discount' => 'required|numeric',
+                'discount_percent' => 'required|numeric|max:90',
+                'ppn' => 'required|numeric|max:50',
+                'grandTotal' => 'required|numeric',
+                'payment' => [
+                    'required',
+                    'numeric',
+                    'min:0',
+                    Rule::when($paymentStatus && $paymentStatus->is_done == 1, 'gte:grandTotal'),
+                    Rule::when($paymentStatus && $paymentStatus->is_done == 0, 'lt:grandTotal'),
+                ],
+            ], [
+                'discount_percent.max' => 'Discount percent tidak boleh lebih dari :max%.',
+                'payment.gte' => 'Jika metode yang dipilih langsung lunas, maka payment harus sama atau lebih dari Grand Total.',
+                'payment.lt' => 'Jika metode yang dipilih tidak langsung lunas, maka payment harus kurang dari Grand Total.',
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+
+            $data = $validator->validated();
+            $data['approved_user_id'] = $request->user()->id;
+            $data['approve_transaction_date'] =  Carbon::now();
+
+            try {
+
+                DB::beginTransaction();
+
+                $transaction->update($data);
+
+                TransactionPayment::create([
+                    'transaction_id' => $transaction->id,
+                    'user_id' => $request->user()->id,
+                    'amount' => $paymentStatus && $paymentStatus->is_done == 1 ? $data['grandTotal'] : $data['payment'],
+                    'payment' => $data['payment'],
+                    'note' => "",
+                ]);
+
+                DB::commit();
+
+                return redirect()->to("transaction/$transaction->id/edit")->with("success", 'Data berhasil diapprove.');
+            } catch (Exception $e) {
+                DB::rollback();
+                dd($e);
+                return redirect()->to("transaction/$transaction->id/edit")->with("error", 'Data gagal diapprove.');
+            }
+
         }
 
         if ($transaction->deleted_at) {
@@ -175,7 +269,7 @@ class TransactionController extends Controller
                 'customer_id' => 'nullable',
                 'number'  => 'required',
                 'transaction_date' => 'required',
-                'transaction_note' => 'nullable',
+                'note' => 'nullable',
                 'payment_status_id' => 'required',
                 'discount'  => 'required|numeric',
                 'discount_percent' => 'required|numeric|max:90',
@@ -193,14 +287,14 @@ class TransactionController extends Controller
     public function destroy(string $id)
     {
         $transaction = Transaction::withTrashed()->findOrFail($id);
-
+        $deletedAt = $transaction->deleted_at;
         if ($transaction->deleted_at) {
             $transaction->forceDelete();
         } else {
             $transaction->delete();
         }
 
-        return back()->with("success", 'Data berhasil dihapus' . ($transaction->deleted_at ? " SELAMANYA" : ""));
+        return back()->with("success", 'Data berhasil dihapus' . ($deletedAt ? " SELAMANYA" : ""));
     }
 
     private function generateTransactionNumber()

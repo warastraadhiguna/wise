@@ -1,29 +1,30 @@
 <?php
 
-use App\Http\Controllers\AuthorityController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\OrderDetailController;
-use App\Http\Controllers\PriceCategoryController;
-use App\Http\Controllers\ProductCategoryController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\ProductPriceRelationController;
-use App\Http\Controllers\PurchaseController;
-use App\Http\Controllers\PurchaseDetailController;
-use App\Http\Controllers\PurchaseReportController;
-use App\Http\Controllers\StockController;
-use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\TransactionDetailController;
-use App\Http\Controllers\UnitController;
-use App\Http\Controllers\BrandController;
-use App\Http\Controllers\CustomerController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\StockController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\AuthorityController;
+use App\Http\Controllers\OrderDetailController;
 use App\Http\Controllers\StoreBranchController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\PriceCategoryController;
+use App\Http\Controllers\PurchaseDetailController;
+use App\Http\Controllers\PurchaseReportController;
+use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\TransactionDetailController;
 use App\Http\Controllers\TransactionReportController;
+use App\Http\Controllers\TransactionPaymentController;
+use App\Http\Controllers\ProductPriceRelationController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [
@@ -68,6 +69,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('purchase-detail', PurchaseDetailController::class);
 
     Route::resource('transaction-detail', TransactionDetailController::class);
+
+    Route::resource('transaction-payment', TransactionPaymentController::class);
+
 
     Route::resource('product-price-relation', ProductPriceRelationController::class);
 

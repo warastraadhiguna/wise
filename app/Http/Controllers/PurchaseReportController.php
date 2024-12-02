@@ -19,6 +19,8 @@ class PurchaseReportController extends Controller
         $paymentMethod = Request()->input("paymentMethod") ?? "";
         $status = Request()->input("status") ?? "";
 
+        $paymentStatus = Request()->input("paymentStatus") ?? "";
+
         $data = [
             "title" => "Purchase Report",
             'purchases' => Purchase::select('purchases.*', 'name', 'company_name')
@@ -26,10 +28,10 @@ class PurchaseReportController extends Controller
             ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails', 'purchaseDetails.product', 'purchaseDetails.product.unit', 'supplier', 'paymentStatus')
             ->withSum('purchasePayment', 'amount')
             ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
-            ->where(function ($query) {
-                $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ['%%'])
-                    ->orWhereRaw('IFNULL(suppliers.company_name, "") LIKE ?', ['%%']);
-            })
+            // ->where(function ($query) use ($searchingText) {
+            //     $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ["%$searchingText%"])
+            //         ->orWhereRaw('IFNULL(suppliers.company_name, "") LIKE ?', ["%$searchingText%"]);
+            // })
             ->whereNotNull('purchases.user_id')
             ->whereNotNull('purchases.supplier_id')
             ->whereBetween('purchase_date', [$startDate, $endDate])

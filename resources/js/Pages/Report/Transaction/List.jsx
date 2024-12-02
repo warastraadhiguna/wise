@@ -2,8 +2,9 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import React, { useState } from "react";
 import dateFormat from "dateformat";
 import { router } from "@inertiajs/react";
+import TransactionFilter from "@/Components/TransactionFilter";
 
-const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, paymentStatuses }) => {
+const List = ({ title, transactions,startDate, endDate, paymentMethod, status, paymentStatuses,paymentStatus }) => {
     const url = window.location.pathname;    
 
     const [isProcessing, setIsProcessing] = useState(false);    
@@ -11,7 +12,8 @@ const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, 
         startDate: startDate,
         endDate: endDate,
         paymentMethod: paymentMethod,
-        status: status
+        status: status,
+        paymentStatus: paymentStatus        
     });
 
     const handleFilterChange = (e) => {
@@ -22,7 +24,7 @@ const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, 
     const handleFilterButton = (e) => {
         setIsProcessing(true);
         e.preventDefault();
-        router.get(`${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}`, {}, {
+        router.get(`${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}&paymentStatus=${filters.paymentStatus}`, {}, {
             onFinish: () => {
                 setIsProcessing(false);
             },
@@ -32,67 +34,7 @@ const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, 
     // console.log(transactions);
     return (
         <AdminLayout title={title}>
-            <div className="mb-10">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4  items-end">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                        <input
-                            type="date"
-                            name="startDate"
-                            value={filters.startDate}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">End Date</label>
-                        <input
-                            type="date"
-                            name="endDate"
-                            value={filters.endDate}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Payment Method</label>
-                        <select
-                            name="paymentMethod"
-                            value={filters.paymentMethod}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        >
-                            <option value="">All</option>
-                            {paymentStatuses.map((status, i) => (
-                                <option key={i} value={status.id}>{status.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <select
-                            name="status"
-                            value={filters.status}
-                            onChange={handleFilterChange}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        >
-                            <option value="">All</option>
-                            <option value="approved">Approved</option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button
-                            type="submit"
-                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            onClick={handleFilterButton}
-                            disabled={isProcessing}
-                        >
-                            Filter
-                        </button>
-                    </div>
-                </div>
-            </div>            
+            <TransactionFilter filters={filters} setFilters={setFilters} paymentStatuses={paymentStatuses} handleFilterButton={ handleFilterButton} />         
             <div className="relative overflow-x-auto">
                 <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400">
                     <thead className="text-xs text-black btransaction-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -223,7 +165,7 @@ const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, 
                                             <tr>
                                                 <td className="font-semibold">Grand Total</td>
                                                 <td>:</td>
-                                                <td>Rp. {Number((transaction.total_amount - transaction.discount - (transaction.total_amount * transaction.discount_percent / 100)) + (transaction.total_amount - transaction.discount - (transaction.total_amount * transaction.discount_percent / 100))*transaction.ppn/100).toLocaleString() }</td>
+                                                <td>Rp. {Number(transaction.grand_total).toLocaleString() }</td>
                                             </tr>         
                                                 <tr>
                                                     <td className="font-semibold">
@@ -232,7 +174,7 @@ const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, 
                                                     <td>:</td>
                                                     <td>
                                                         Rp.{" "}
-                                                        {Number(transaction.transaction_payment_sum_amount
+                                                        {Number(transaction.transaction_payments_sum_amount
                                                         ).toLocaleString()}
                                                     </td>
                                                 </tr>                                               
@@ -388,4 +330,4 @@ const Index = ({ title, transactions,startDate, endDate, paymentMethod, status, 
     );
 };
 
-export default Index;
+export default List;

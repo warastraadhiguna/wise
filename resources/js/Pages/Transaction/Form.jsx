@@ -4,14 +4,17 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Select from "react-select";
 import Detail from "./Detail";
+import Payment from "./Payment";
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi'; 
 
 const Form = ({ title, transaction, previousUrl, customers, products, transactionDetails, paymentStatuses}) => {
 
     const { flash, errors,auth } = usePage().props;
     const [isEditNumberInput, setIsEditNumberInput] = useState("");  
-
+    const [showPaymentForm, setShowPaymentForm] = useState(false);    
     const [isCollapsed, setIsCollapsed] = useState(transaction.transaction_date);     
+    const [totalSum, setTotalSum] = useState(0);
+    const [grandtotal, setGrandtotal] = useState(0);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed); 
@@ -27,7 +30,9 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
         payment_status_id: transaction.payment_status_id,
         discount: transaction.discount,
         discount_percent: transaction.discount_percent,
-        ppn: transaction.ppn
+        ppn: transaction.ppn,
+        payment: 0,
+        change:0,
     });
 
     const customerOptions = Object.keys(customers).map((key) => ({
@@ -41,15 +46,24 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
     }));        
 
     const seletedSupplierOption = customerOptions.find(option => option.value === transaction.customer_id);
-    const seletedPaymentStatusOption = paymentStatusOptions.find(option => option.value === transaction.payment_status_id);
+    const selectedPaymentStatusOption = paymentStatusOptions.find(option => option.value === transaction.payment_status_id);
     
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handleChange = (event) => {
-        setDataProps((prevData) => ({
-            ...prevData,
-            [event.target.name]: event.target.value,
-        }));
+        if (event.target.name === "payment") {
+            setDataProps((prevData) => ({
+                ...prevData,
+                [event.target.name]: event.target.value,
+                change:(grandtotal-event.target.value)
+            }));
+        } else {
+            setDataProps((prevData) => ({
+                ...prevData,
+                [event.target.name]: event.target.value,
+            }));
+        }
+
     };
 
     const handleOptionChange = (selectedOption, name = "") => {
@@ -79,6 +93,16 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
         flash.success && toast.success(flash.success);
         flash.error && toast.error(flash.error);
     }, [flash]);
+
+    useEffect(() => {
+        const total = transactionDetails.reduce((acc, transactionDetail) => {
+            const totalPerRow = transactionDetail.quantity * (transactionDetail.price - transactionDetail.discount - (transactionDetail.price * transactionDetail.discount_percent / 100));
+            return acc + totalPerRow;
+        }, 0);
+        setTotalSum(total);
+        const grandTotal = total - transaction.discount - (total * transaction.discount_percent / 100);
+        setGrandtotal(Math.round(grandTotal + grandTotal*transaction.ppn/100));
+    }, [transactionDetails]);
 
     return (
         <AdminLayout title={title}>
@@ -200,7 +224,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
                                     htmlFor="grid-customer"
                                 >
-                                    Payment
+                                    Payment Method
                                 </label>
                                 <div className="inline-block relative w-full">
                                     <Select
@@ -209,7 +233,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                         className="basic-single"
                                         classNamePrefix="select"
                                         onChange={(selectedOption) => handleOptionChange(selectedOption, 'payment_status_id')}
-                                        defaultValue={seletedPaymentStatusOption }
+                                        defaultValue={selectedPaymentStatusOption }
                                         isDisabled={transaction.deleted_at || isProcessing || transaction.approve_transaction_date }
                                     />
                                 </div>
@@ -332,8 +356,9 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                 ) : <div className="text-sm text-right mr-3" onClick={toggleCollapse}>Click to more transaction information</div> }
             </div>    
 
-            <Detail transaction={transaction} products={ products } transactionDetails={transactionDetails} />
+            <Detail transaction={transaction} products={products} transactionDetails={transactionDetails} setShowPaymentForm={setShowPaymentForm} totalSum={totalSum} grandtotal={ grandtotal } />
 
+            {showPaymentForm && <Payment setShowPaymentForm={setShowPaymentForm} dataProps={dataProps} totalSum={totalSum} errors={errors} setIsProcessing={setIsProcessing } isProcessing={isProcessing} transaction={transaction} paymentStatusOptions={paymentStatusOptions} handleChange={handleChange} selectedPaymentStatusOption={selectedPaymentStatusOption} isEditNumberInput={isEditNumberInput} auth={auth} handleOptionChange={handleOptionChange} setIsEditNumberInput={setIsEditNumberInput} /> }  
         </AdminLayout>
     );
 };

@@ -1,6 +1,6 @@
 import { router } from "@inertiajs/react";
-import React, {useRef} from "react";
-import { useState, useEffect } from "react";
+import React, {useEffect, useRef} from "react";
+import { useState} from "react";
 import Product from "./Product";
 import Order from "./Order";
 import { FaRegTrashAlt } from "react-icons/fa";
@@ -9,10 +9,10 @@ import { IoMdClose } from "react-icons/io";
 import UpdateConfirmation from "@/Components/UpdateConfirmation";
 import { MdAttachMoney } from "react-icons/md";
 
-const Detail = ({ transaction, products, transactionDetails}) => {
+const Detail = ({ transaction, products, transactionDetails, setShowPaymentForm, totalSum, grandtotal }) => {
     const [searchingText, setSearchingText] = useState(""); 
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);  
-    const [showUpdateConfirmation, setShowUpdateConfirmation] = useState(false);      
+ 
     const [isProcessing, setIsProcessing] = useState(false);    
     const [isEditing, setIsEditing] = useState(false);        
     const [isOptionEditing, setIsOptionEditing] = useState(true);       
@@ -21,18 +21,25 @@ const Detail = ({ transaction, products, transactionDetails}) => {
     const [showOrderDetails, setShowOrderDetails] = useState(false);    
     const url = window.location.pathname;
     const [multiplier, setMultiplier] = useState("-1");
-    const [totalSum, setTotalSum] = useState(0);
-    const [grandtotal, setGrandtotal] = useState(0);
+
     const inputRef = useRef(null); 
+
     useEffect(() => {
-        const total = transactionDetails.reduce((acc, transactionDetail) => {
-            const totalPerRow = transactionDetail.quantity * (transactionDetail.price - transactionDetail.discount - (transactionDetail.price * transactionDetail.discount_percent / 100));
-            return acc + totalPerRow;
-        }, 0);
-        setTotalSum(total);
-        const grandTotal = total - transaction.discount - (total * transaction.discount_percent / 100);
-        setGrandtotal(grandTotal + grandTotal*transaction.ppn/100);
-    }, [transactionDetails]);
+        // Function to handle keydown event
+        const handleKeyDown = (event) => {
+            if (event.key === "F2") {
+                setShowPaymentForm(true);
+            }
+        };
+
+        // Adding keydown event listener when the component is mounted
+        window.addEventListener("keydown", handleKeyDown);
+
+        // Cleanup event listener when component is unmounted
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);    
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
@@ -105,10 +112,10 @@ const Detail = ({ transaction, products, transactionDetails}) => {
         });
     }
 
-    const handleUpdateConfirmation = () => {
-        setShowUpdateConfirmation(true);
-        setDataProps(transaction);        
-    }
+    // const handleUpdateConfirmation = () => {
+    //     setShowUpdateConfirmation(true);
+    //     setDataProps(transaction);        
+    // }
 
     const handleChange = (event) => {        
         setDataProps((prevData) => ({
@@ -116,18 +123,6 @@ const Detail = ({ transaction, products, transactionDetails}) => {
             [event.target.name]: event.target.value,
         }));
     };
-
-    const approveOrder = (e) => {
-        e.preventDefault();
-        setIsProcessing(true);
-
-        router.put(`/transaction/${dataProps.id}?approveParameter=1`, dataProps, {
-            onFinish:()=> {
-                setIsProcessing(false);
-                setShowUpdateConfirmation(false);
-            }
-        });            
-    }
 
     return (
         <div className="w-full mx-auto mt-5">
@@ -142,12 +137,11 @@ const Detail = ({ transaction, products, transactionDetails}) => {
             )}
 
             {showOrderDetails && (
-                <Order orderDetails={transactionDetails} setShowOrderDetails={setShowOrderDetails}                     handleKeyPress={handleKeyPress} setSearchingText={setSearchingText} searchingText={searchingText}/>
+                <Order orderDetails={transactionDetails} setShowOrderDetails={setShowOrderDetails} handleKeyPress={handleKeyPress} setSearchingText={setSearchingText} searchingText={searchingText}/>
             )}
 
             {showDeleteConfirmation && <DeleteConfirmation setShowDeleteConfirmation={setShowDeleteConfirmation} dataProps={dataProps} handleDelete={handleDelete} isProcessing={isProcessing}/>}     
             
-            {showUpdateConfirmation && <UpdateConfirmation setShowUpdateConfirmation={setShowUpdateConfirmation} dataProps={dataProps} handleUpdate={approveOrder} isProcessing={isProcessing}/>}    
 
             {!transaction.deleted_at &&
                 <div className="flex flex-wrap -mx-3 mb-6 mt-3">
@@ -159,9 +153,10 @@ const Detail = ({ transaction, products, transactionDetails}) => {
                                     {transactionDetails && transactionDetails.length>0 &&
                                     <button
                                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-4"
-                                        onClick={handleUpdateConfirmation}
+                                            // onClick={handleUpdateConfirmation}
+                                        onClick={() =>setShowPaymentForm(true)}
                                     >
-                                        Approve Purchasing
+                                        Approve Purchasing (F2)
                                         </button>
                                     }
                                     {transaction.order_date &&

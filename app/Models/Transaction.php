@@ -18,7 +18,7 @@ class Transaction extends Model
         'customer_id',
         'number',
         'transaction_date',
-        'transaction_note',
+        'note',
         'payment_status_id',
         'discount',
         'discount_percent',
@@ -28,16 +28,16 @@ class Transaction extends Model
         'store_branch_id'
     ];
 
-    protected static function booted()
-    {
-        static::created(function ($transaction) {
-            TransactionPayment::create([
-                'transaction_id' => $transaction->id,
-                'user_id' => $transaction->user_id,
-                'amount' => 0,
-            ]);
-        });
-    }
+    // protected static function booted()
+    // {
+    //     static::created(function ($transaction) {
+    //         TransactionPayment::create([
+    //             'transaction_id' => $transaction->id,
+    //             'user_id' => $transaction->user_id,
+    //             'amount' => 0,
+    //         ]);
+    //     });
+    // }
 
     public function transactionUser()
     {
@@ -69,7 +69,7 @@ class Transaction extends Model
         return $this->belongsTo(PaymentStatus::class);
     }
 
-    public function transactionPayment()
+    public function transactionPayments()
     {
         return $this->hasMany(TransactionPayment::class);
     }

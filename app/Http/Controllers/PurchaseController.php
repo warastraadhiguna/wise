@@ -25,19 +25,42 @@ class PurchaseController extends Controller
         $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
 
         $paymentMethod = Request()->input("paymentMethod") ?? "";
+        $paymentStatus = Request()->input("paymentStatus") ?? "";
+
         $status = Request()->input("status") ?? "";
         $data = [
             'title' => 'Purchase List',
             'purchases' => Purchase::withTrashed()
             ->select('purchases.*', 'name', 'company_name')
             ->addSelect(DB::raw('(SELECT SUM(quantity * (price - discount - (price*discount_percent/100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id) as total_amount'))
+            ->addSelect(DB::raw('
+                (
+                    (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
+                    - discount 
+                    - (
+                        (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
+                        * discount_percent / 100
+                    )
+                    + (
+                        (
+                            (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
+                            - discount 
+                            - (
+                                (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
+                                * discount_percent / 100
+                            )
+                        ) * ppn / 100
+                    )
+                ) as grand_total
+            '))
             ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails', 'purchaseDetails.product', 'purchaseDetails.product.unit', 'supplier', 'paymentStatus')
             ->withSum('purchasePayment', 'amount')
             ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
-            ->where(function ($query) {
-                $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ['%%'])
-                    ->orWhereRaw('IFNULL(suppliers.company_name, "") LIKE ?', ['%%']);
+            ->where(function ($query) use ($searchingText) {
+                $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ["%$searchingText%"])
+                    ->orWhereRaw('IFNULL(suppliers.company_name, "") LIKE ?', ["%$searchingText%"]);
             })
+
             ->whereNotNull('purchases.user_id')
             ->whereBetween('purchase_date', [$startDate, $endDate])
             ->when($paymentMethod, function ($query) use ($paymentMethod) {
@@ -45,6 +68,13 @@ class PurchaseController extends Controller
             })
             ->when(!empty($status), function ($query) use ($status) {
                 return $status == "approved" ? $query->whereNotNull('approve_purchase_date') : $query->whereNull('approve_purchase_date');
+            })
+            ->when($paymentStatus, function ($query) use ($paymentStatus) {
+                if ($paymentStatus == 'Paid') {
+                    $query->havingRaw('grand_total = purchase_payments_sum_amount');
+                } elseif ($paymentStatus == 'Unpaid') {
+                    $query->havingRaw('grand_total > purchase_payments_sum_amount');
+                }
             })
             ->orderByRaw('CASE WHEN purchases.approve_purchase_date IS NULL THEN 0 ELSE 1 END asc')
             ->orderBy('purchases.purchase_date', 'desc')
@@ -55,13 +85,19 @@ class PurchaseController extends Controller
             ->appends([
                 'perPage' => $perPage,
                 'searchingText' => $searchingText,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'paymentMethod' => $paymentMethod,
+                'status' => $status,
+                'paymentStatus' => $paymentStatus,
             ]),
             'searchingTextProps' => $searchingText ?? "",
             'startDate' => $startDate,
             'endDate' => $endDate,
             'paymentMethod' => $paymentMethod,
             'status' => $status,
-            'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
+            'paymentStatus' => $paymentStatus,
+            'paymentStatuses' => PaymentStatus::where("is_purchase", "1")->orderBy('index')->get(),
         ];
 
         return Inertia::render("Purchase/Index", $data);
@@ -196,14 +232,14 @@ class PurchaseController extends Controller
     public function destroy(string $id)
     {
         $purchase = Purchase::withTrashed()->findOrFail($id);
-
+        $deletedAt = $purchase->deleted_at;
         if ($purchase->deleted_at) {
             $purchase->forceDelete();
         } else {
             $purchase->delete();
         }
 
-        return back()->with("success", 'Data berhasil dihapus' . ($purchase->deleted_at ? " SELAMANYA" : ""));
+        return back()->with("success", 'Data berhasil dihapus' . ($deletedAt ? " SELAMANYA" : ""));
     }
 
     private function generatePurchaseNumber()

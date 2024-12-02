@@ -1,13 +1,14 @@
 import { router } from '@inertiajs/react';
 import React, { useRef } from 'react'
 
-const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }) => {
+const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText, filterParameter }) => {
     const temporaryText = useRef(searchingText); 
     const url = window.location.pathname;
 
     const changePerPage = (e) => {
         e.preventDefault();   
-        router.get(`${url}?page=1&perPage=${e.target.value}&searchingText=${searchingText}`, {}, {
+        const uri = `${filterParameter? filterParameter + "&" : url + "?"}page=1&perPage=${e.target.value}&searchingText=${searchingText}`;
+        router.get(uri, {}, {
             onSuccess: () => {
                 temporaryText.current = searchingText;         
             }
@@ -19,7 +20,8 @@ const SearchingTable = ({ perPage, setPerPage, searchingText, setSearchingText }
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            router.get(`${url}?page=1&perPage=${perPage}&searchingText=${searchingText}`, {}, {
+            const uri = `${filterParameter? filterParameter + "&" : url + "?"}?page=1&perPage=${perPage}&searchingText=${searchingText}`;
+            router.get(uri, {}, {
                 onSuccess: () => {
                     temporaryText.current = searchingText;
                 }

@@ -17,7 +17,8 @@ class TransactionPayment extends Model
         'transaction_id',
         'user_id',
         'amount',
-        'note'
+        'note',
+        'payment'
     ];
 
     public function user()
