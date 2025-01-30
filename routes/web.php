@@ -25,6 +25,9 @@ use App\Http\Controllers\TransactionReportController;
 use App\Http\Controllers\TransactionPaymentController;
 use App\Http\Controllers\ProductPriceRelationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\PurchaseDetailReturnController;
+use App\Http\Controllers\PurchasePaymentController;
+use App\Http\Controllers\TransactionDetailReturnController;
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [
@@ -72,9 +75,11 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     Route::resource('transaction-payment', TransactionPaymentController::class);
 
+    Route::resource('purchase-payment', PurchasePaymentController::class);
 
+    Route::resource('purchase-detail-return', PurchaseDetailReturnController::class);
+    Route::resource('transaction-detail-return', TransactionDetailReturnController::class);
     Route::resource('product-price-relation', ProductPriceRelationController::class);
-
 
     Route::get('/purchase-report', [PurchaseReportController::class, 'index']);
     Route::get('/transaction-report', [TransactionReportController::class, 'index']);

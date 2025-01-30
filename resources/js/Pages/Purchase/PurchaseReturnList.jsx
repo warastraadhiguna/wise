@@ -5,35 +5,34 @@ import React, { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 
-const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
+const PurchaseReturnList = ({ setShowPurchaseReturnList, purchaseDetail, flash }) => {
     const { errors } = usePage().props;    
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-    const [showPaymentForm, setShowPaymentForm] = useState(false);
+    const [showPurchaseReturnForm, setShowPurchaseReturnForm] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const defaultValueData = {
-        transaction_id: transaction.id,
-        payment: 0,
-        change: 0,
-        unpaid: transaction.grand_total- transaction.transaction_payments_sum_amount,      
-        note: ''
+        purchase_detail_id: purchaseDetail.id,
+        quantity: 0,
+        rest: purchaseDetail.quantity - (purchaseDetail.purchase_detail_returns_sum_quantity?? 0),      
     };
     const [dataProps, setDataProps] = useState(defaultValueData);
-    const [payments, setPayments] = useState([]);
+    const [purchaseReturns, setPurchaseReturns] = useState([]);
     const [isEditNumberInput, setIsEditNumberInput] = useState("");  
+
     const handleDelete = () => {
         setIsProcessing(true);
 
-        router.delete(`/transaction-payment/${dataProps.id}`, {
+        router.delete(`/purchase-detail-return/${dataProps.id}`, {
             onSuccess: (response) =>{
-                setPayments((prevPayments) =>
-                    prevPayments.filter(
-                        (payment) => payment.id !== dataProps.id
+                setPurchaseReturns((prevPurchaseReturns) =>
+                    prevPurchaseReturns.filter(
+                        (purchaseReturn) => purchaseReturn.id !== dataProps.id
                     )
                 );
 
                 setDataProps((prevData) => ({
                     ...defaultValueData,
-                    "unpaid" : prevData.unpaid + prevData.payment
+                    "rest" : prevData.rest + prevData.quantity
                 }));   
             },
             onFinish: () => {
@@ -43,25 +42,22 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
         });
     };
 
-    const handleSavePayment = (e) => {
+    const handleSavePurchaseReturn = (e) => {
         e.preventDefault();
-        router.post("/transaction-payment", dataProps, {
+        // console.log("asdf");
+        router.post("/purchase-detail-return", dataProps, {
             onSuccess: (response) => {
-                const trans = response.props.transactions.data.find(
-                    (trans) => trans.id === transaction.id
+                const trans = response.props.purchaseDetails.find(
+                    (trans) => trans.id === purchaseDetail.id
                 );
 
                 if (trans) {
-                    setPayments(
-                        trans.transaction_payments.filter(
-                            (payment) => payment.deleted_at === null
-                        )
-                    );
+                    setPurchaseReturns(trans.purchase_detail_returns);
                 }
-                setShowPaymentForm(false);
+                setShowPurchaseReturnForm(false);
                 setDataProps((prevData) => ({
                     ...defaultValueData,
-                    "unpaid" : prevData.unpaid - prevData.payment
+                    "rest" : prevData.rest - prevData.quantity
                 }));
             },            
             onFinish: () => {
@@ -78,24 +74,20 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
         }));
     };    
 
-    const handleDeleteConfirmation = (payment) => {
+    const handleDeleteConfirmation = (purchaseReturn) => {
         setShowDeleteConfirmation(true);
         setDataProps((prevData) => ({
             ...prevData,
-            "id": payment.id,
-            "payment" : payment.amount
+            "id": purchaseReturn.id,
+            "quantity" : purchaseReturn.quantity
         }));
     };
 
     useEffect(() => {
-        setPayments(
-            transaction.transaction_payments.filter(
-                (payment) => payment.deleted_at === null
-            )
-        );
+        setPurchaseReturns(purchaseDetail.purchase_detail_returns);
         setDataProps(defaultValueData);
-    }, [transaction]);
-    
+    }, [purchaseDetail]);
+        // console.log(purchaseReturns);
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             {showDeleteConfirmation ? (
@@ -105,11 +97,10 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                     handleDelete={handleDelete}
                     isProcessing={isProcessing}
                 />
-            ) : showPaymentForm ? (
-                        <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
-
+            ) : showPurchaseReturnForm ? (
+            <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
                 <h2 className="text-3xl font-semibold mb-5 text-center">
-                    Payment
+                    Purchase Return
                     <hr/>
                 </h2>
 
@@ -119,15 +110,15 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                             <div className="w-full flex items-center mb-2">
                                 <label
                                     className="block uppercase tracking-wide text-black text-lg font-bold mr-2 w-2/6 text-right"
-                                    htmlFor="grid-grand-total-payment"
+                                    htmlFor="grid-grand-total-purchaseReturn"
                                 >
-                                    Unpaid
+                                    Rest
                                 </label>
                                 <input
                                     className="appearance-none block w-4/6 bg-white text-black border border-gray-200 rounded py-2 px-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 text-2xl"
-                                    id="grid-grand-total-payment"
-                                    name="unpaid"
-                                    value={Number(dataProps.unpaid).toLocaleString()}
+                                    id="grid-rest"
+                                    name="rest"
+                                    value={Number(dataProps.rest).toLocaleString()}
                                     type={"text"}
                                     disabled={true}
                                 />
@@ -137,28 +128,28 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                             <div className="w-full flex items-center mb-2">
                                 <label
                                     className="block uppercase tracking-wide text-black text-lg font-bold mr-2 w-2/6 text-right"
-                                    htmlFor="grid-name"
+                                    htmlFor="grid-quality"
                                 >
-                                    Payment
+                                    Quantity
                                 </label>
                                 <input
                                     className="appearance-none block w-4/6 bg-white text-black border border-gray-200 rounded py-2 px-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 text-2xl"
-                                    id="grid-transaction-discount"
-                                    name="payment"
-                                    value={isEditNumberInput == 'payment' ? dataProps.payment : Number(dataProps.payment).toLocaleString()}
-                                    type={isEditNumberInput == 'payment' ? "number" : "text"}
+                                    id="grid-detail-purchase-discount"
+                                    name="quantity"
+                                    value={isEditNumberInput == 'quantity' ? dataProps.quantity : Number(dataProps.quantity).toLocaleString()}
+                                    type={isEditNumberInput == 'quantity' ? "number" : "text"}
                                     step="0.1"
                                     min="0"
-                                    disabled={transaction.deleted_at || isProcessing}
+                                    disabled={purchaseDetail.deleted_at || isProcessing}
                                     onFocus={(event) => { setIsEditNumberInput(event.target.name); event.target.select(); }}
                                     onBlur={() => setIsEditNumberInput("")}
                                     onChange={(event) => handleChange(event)}
                                     autoFocus 
                                 />
                             </div>
-                            {errors && errors.payment && (
+                            {errors && errors.quantity && (
                                 <div className="text-red-700 text-sm mt-1 ml-1">
-                                    {errors.payment}
+                                    {errors.quantity}
                                 </div>
                             )}
                         </div>
@@ -187,11 +178,11 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                             </div>                          
                         </div>                              
                         <div className="mt-4 flex justify-end">
-                            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-2" type="button" onClick={(event) => handleSavePayment(event)} disabled={isProcessing}>
+                            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-2" type="button" onClick={(event) => handleSavePurchaseReturn(event)} disabled={isProcessing}>
                                 Save
                             </button>
                             <button
-                                onClick={() => setShowPaymentForm(false)}
+                                onClick={() => setShowPurchaseReturnForm(false)}
                                 className="bg-red-500 text-white font-bold py-1 px-2 rounded"
                                 disabled={isProcessing}
                             >
@@ -201,34 +192,33 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                 </div>
 
 
-            </div>
-            
-            
+            </div>           
             ) :
             (
             <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[75vh] p-6 relative overflow-hidden">
                     <button
-                        onClick={() => setShowPaymentList(false)}
+                        onClick={() => setShowPurchaseReturnList(false)}
                         className="absolute top-0 right-0 mt-3 mr-3 text-gray-600 hover:text-gray-900 focus:outline-none text-2xl"
                     >
                         &times;
                     </button>
 
                     <h2 className="text-3xl font-semibold mb-5 text-center">
-                        Payments
+                        Purchase Return
                         <hr />
                     </h2>
 
                     <div className="relative overflow-y-auto max-h-[65vh]">
-                        {dataProps.unpaid > 0 &&                        <MdOutlineAddCircleOutline
+                        {dataProps.rest > 0 &&
+                        <MdOutlineAddCircleOutline
                             size={40}
                             color="blue"
                             className="cursor-pointer ml-3 mb-3"
-                            onClick={()=>setShowPaymentForm(true)}
+                            onClick={()=>setShowPurchaseReturnForm(true)}
                         />  }
 
                         <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400 mb-10">
-                            <thead className="text-xs text-black bpayment-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <thead className="text-xs text-black bpurchaseReturn-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" className="px-6 py-3">
                                         No
@@ -237,7 +227,7 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                                         User
                                     </th>
                                     <th scope="col" className="px-6 py-3">
-                                        Amount
+                                        Quantity
                                     </th>
                                     <th scope="col" className="px-6 py-3">
                                         Note
@@ -255,15 +245,11 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {payments
-                                    .filter(
-                                        (payment) => payment.deleted_at === null
-                                    )
-                                    .map((payment, i) => (
+                                {purchaseReturns.map((purchaseReturn, i) => (
                                         <tr
                                             key={i}
-                                            className={`bg-white bpayment-b dark:bg-gray-800 dark:bpayment-gray-700  ${
-                                                payment.deleted_at
+                                            className={`bg-white bpurchaseReturn-b dark:bg-gray-800 dark:bpurchaseReturn-gray-700  ${
+                                                purchaseReturn.deleted_at
                                                     ? "line-through bg-yellow-50"
                                                     : ""
                                             }`}
@@ -275,19 +261,19 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                                                 {i + 1}
                                             </td>
                                             <td className="px-6 py-4">
-                                                {payment.user.name}
+                                                {purchaseReturn.user.name}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {Number(
-                                                    payment.amount
+                                                    purchaseReturn.quantity
                                                 ).toLocaleString()}
                                             </td>
                                             <td className="px-6 py-4">
-                                                {payment.note}
+                                                {purchaseReturn.note}
                                             </td>                                            
                                             <td className="px-6 py-4">
                                                 {dateFormat(
-                                                    payment.created_at,
+                                                    purchaseReturn.created_at,
                                                     "dd-mm-yyyy H:M:s"
                                                 )}
                                             </td>
@@ -295,14 +281,14 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                                                 <FaRegTrashAlt
                                                     size={20}
                                                     color={
-                                                        payment.deleted_at
+                                                        purchaseReturn.deleted_at
                                                             ? "#e18859"
                                                             : "red"
                                                     }
                                                     className="cursor-pointer"
                                                     onClick={() =>
                                                         handleDeleteConfirmation(
-                                                            payment
+                                                            purchaseReturn
                                                         )
                                                     }
                                                 />
@@ -318,4 +304,4 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
     );
 };
 
-export default PaymentList;
+export default PurchaseReturnList;

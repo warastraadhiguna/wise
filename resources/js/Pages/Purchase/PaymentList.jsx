@@ -5,25 +5,26 @@ import React, { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 
-const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
+const PaymentList = ({ setShowPaymentList, purchase, flash }) => {
     const { errors } = usePage().props;    
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const defaultValueData = {
-        transaction_id: transaction.id,
+        purchase_id: purchase.id,
         payment: 0,
         change: 0,
-        unpaid: transaction.grand_total- transaction.transaction_payments_sum_amount,      
+        unpaid: purchase.grand_total- purchase.purchase_payments_sum_amount,      
         note: ''
     };
     const [dataProps, setDataProps] = useState(defaultValueData);
     const [payments, setPayments] = useState([]);
     const [isEditNumberInput, setIsEditNumberInput] = useState("");  
+    // console.log(purchase);
     const handleDelete = () => {
         setIsProcessing(true);
 
-        router.delete(`/transaction-payment/${dataProps.id}`, {
+        router.delete(`/purchase-payment/${dataProps.id}`, {
             onSuccess: (response) =>{
                 setPayments((prevPayments) =>
                     prevPayments.filter(
@@ -45,15 +46,16 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
 
     const handleSavePayment = (e) => {
         e.preventDefault();
-        router.post("/transaction-payment", dataProps, {
+        // console.log("asdf");
+        router.post("/purchase-payment", dataProps, {
             onSuccess: (response) => {
-                const trans = response.props.transactions.data.find(
-                    (trans) => trans.id === transaction.id
+                const trans = response.props.purchases.data.find(
+                    (trans) => trans.id === purchase.id
                 );
 
                 if (trans) {
                     setPayments(
-                        trans.transaction_payments.filter(
+                        trans.purchase_payments.filter(
                             (payment) => payment.deleted_at === null
                         )
                     );
@@ -89,12 +91,12 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
 
     useEffect(() => {
         setPayments(
-            transaction.transaction_payments.filter(
+            purchase.purchase_payments.filter(
                 (payment) => payment.deleted_at === null
             )
         );
         setDataProps(defaultValueData);
-    }, [transaction]);
+    }, [purchase]);
     
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -143,13 +145,13 @@ const PaymentList = ({ setShowPaymentList, transaction, flash }) => {
                                 </label>
                                 <input
                                     className="appearance-none block w-4/6 bg-white text-black border border-gray-200 rounded py-2 px-3 leading-tight focus:outline-none focus:bg-white focus:border-gray-500 text-2xl"
-                                    id="grid-transaction-discount"
+                                    id="grid-purchase-discount"
                                     name="payment"
                                     value={isEditNumberInput == 'payment' ? dataProps.payment : Number(dataProps.payment).toLocaleString()}
                                     type={isEditNumberInput == 'payment' ? "number" : "text"}
                                     step="0.1"
                                     min="0"
-                                    disabled={transaction.deleted_at || isProcessing}
+                                    disabled={purchase.deleted_at || isProcessing}
                                     onFocus={(event) => { setIsEditNumberInput(event.target.name); event.target.select(); }}
                                     onBlur={() => setIsEditNumberInput("")}
                                     onChange={(event) => handleChange(event)}

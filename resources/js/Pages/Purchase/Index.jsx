@@ -2,13 +2,14 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import { Link, router, usePage } from "@inertiajs/react";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { FaPencilAlt, FaRegTrashAlt } from "react-icons/fa";
+import { FaMoneyBill, FaPencilAlt, FaRegTrashAlt } from "react-icons/fa";
 import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 import dateFormat from "dateformat";
 import TransactionFilter from "@/Components/TransactionFilter";
+import PaymentList from "./PaymentList";
 
 const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymentMethod, status, paymentStatuses, paymentStatus }) => {
     const url = window.location.pathname;  
@@ -25,7 +26,8 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
     
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-
+    const [showPaymentList, setShowPaymentList] = useState(false);    
+    const [selectedPurchase, setSelectedPurchase] = useState([]);
     const [filters, setFilters] = useState({
         startDate: startDate,
         endDate: endDate,
@@ -36,10 +38,10 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
 
     const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}&paymentStatus=${filters.paymentStatus}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters({ ...filters, [name]: value });
-    };
+    // const handleFilterChange = (e) => {
+    //     const { name, value } = e.target;
+    //     setFilters({ ...filters, [name]: value });
+    // };
 
     const handleFilterButton = (e) => {
         setIsProcessing(true);
@@ -284,17 +286,24 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
                                                 <td>:</td>
                                                 <td>Rp. {Number(purchase.grand_total).toLocaleString() }</td>
                                             </tr>         
-                                                <tr>
-                                                    <td className="font-semibold">
-                                                        Paid
-                                                    </td>
-                                                    <td>:</td>
-                                                    <td>
-                                                        Rp.{" "}
-                                                        {Number(purchase.purchase_payment_sum_amount
-                                                        ).toLocaleString()}
-                                                    </td>
-                                                </tr>                                               
+                                            <tr>
+                                                <td className="font-semibold">
+                                                    Paid
+                                                </td>
+                                                <td>:</td>
+                                                <td>
+                                                    Rp.{" "}
+                                                    {Number(purchase.purchase_payments_sum_amount
+                                                    ).toLocaleString()}
+                                                </td>
+                                            </tr>                   
+                                            <tr>
+                                                <td className="font-semibold">Return</td>
+                                                <td>:</td>
+                                                <td>Rp.{" "}
+                                                    {Number(purchase.total_return_amount
+                                                    ).toLocaleString()}</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </td>
@@ -316,7 +325,20 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
                                                 handleDeleteConfirmation(purchase)
                                             }
                                         />}
-                                        
+                                        {purchase.approve_purchase_date &&
+                                            <React.Fragment>
+                                                {" "} | {" "}
+                                            <FaMoneyBill
+                                                size={20}
+                                                    color={purchase.deleted_at ? "#c2bc42" : "gold"}
+                                                    onClick={() => {
+                                                        setShowPaymentList(true);
+                                                        setSelectedPurchase(purchase);
+                                                    }}
+                                                className="cursor-pointer"
+                                            /> 
+                                            </React.Fragment>
+                                        }                                        
                                     </div>
                                 </td>
                             </tr>
@@ -324,7 +346,8 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
                     </tbody>
                 </table>
             </div>
-            {showDeleteConfirmation && <DeleteConfirmation setShowDeleteConfirmation={setShowDeleteConfirmation} dataProps={dataProps} handleDelete={handleDelete} isProcessing={isProcessing}/>}            
+            {showDeleteConfirmation && <DeleteConfirmation setShowDeleteConfirmation={setShowDeleteConfirmation} dataProps={dataProps} handleDelete={handleDelete} isProcessing={isProcessing} />}            
+            {showPaymentList && <PaymentList setShowPaymentList={setShowPaymentList} purchase={selectedPurchase} flash={ flash } />}              
             <Pagination data={purchases}></Pagination>
         </AdminLayout>
     );

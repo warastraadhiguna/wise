@@ -59,6 +59,18 @@ class TransactionController extends Controller
                     )
                 ) as grand_total
             '))
+            ->addSelect(DB::raw('(
+                SELECT SUM(tdr.quantity * (
+                    (
+                        (td.price * (1 - IFNULL(td.discount_percent, 0) / 100)) - IFNULL(td.discount, 0)
+                    ) 
+                    * (1 - IFNULL(t.discount_percent, 0) / 100) - IFNULL(t.discount, 0)
+                ) * (1 + IFNULL(t.ppn, 0) / 100))
+                FROM transaction_detail_returns tdr
+                JOIN transaction_details td ON tdr.transaction_detail_id = td.id
+                JOIN transactions t ON td.transaction_id = t.id
+                WHERE td.transaction_id = transactions.id
+            ) AS total_return_amount'))
             ->with('storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus', 'transactionPayments', 'transactionPayments.user')
             ->withSum('transactionPayments', 'amount')
             ->leftJoin('customers', 'transactions.customer_id', '=', 'customers.id')
@@ -181,7 +193,7 @@ class TransactionController extends Controller
         $data = [
             'title' => 'Edit Transaction',
             'transaction' => $transaction,
-            'transactionDetails' => TransactionDetail::with('product', 'product.unit', 'product.priceRelations.priceCategory')->where('transaction_id', '=', $id)->orderBy('created_at', 'desc')->get(),
+            'transactionDetails' => TransactionDetail::with('product', 'product.unit', 'product.priceRelations.priceCategory', 'transactionDetailReturns', 'transactionDetailReturns.user')->withSum('transactionDetailReturns', 'quantity')->where('transaction_id', '=', $id)->orderBy('created_at', 'desc')->get(),
             'previousUrl' => session()->has('previousUrlTransaction') ? session('previousUrlTransaction') : "/transaction",
             'customers' => Customer::get(),
             'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
@@ -207,6 +219,7 @@ class TransactionController extends Controller
                 'customer_id' => 'nullable',
                 'payment_status_id' => 'required',
                 'discount' => 'required|numeric',
+                'transaction_date' => 'required',
                 'discount_percent' => 'required|numeric|max:90',
                 'ppn' => 'required|numeric|max:50',
                 'grandTotal' => 'required|numeric',
@@ -252,7 +265,6 @@ class TransactionController extends Controller
                 return redirect()->to("transaction/$transaction->id/edit")->with("success", 'Data berhasil diapprove.');
             } catch (Exception $e) {
                 DB::rollback();
-                dd($e);
                 return redirect()->to("transaction/$transaction->id/edit")->with("error", 'Data gagal diapprove.');
             }
 

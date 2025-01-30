@@ -7,8 +7,10 @@ import { FaRegTrashAlt } from "react-icons/fa";
 import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import { IoMdClose } from "react-icons/io";
 import UpdateConfirmation from "@/Components/UpdateConfirmation";
+import { GiReturnArrow } from "react-icons/gi";
+import PurchaseReturnList from "./PurchaseReturnList";
 
-const Detail = ({ purchase, products, purchaseDetails}) => {
+const Detail = ({ purchase, products, purchaseDetails, setShowPaymentForm, totalSum, grandtotal, flash }) => {
     const [searchingText, setSearchingText] = useState(""); 
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);  
     const [showUpdateConfirmation, setShowUpdateConfirmation] = useState(false);      
@@ -17,21 +19,28 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
     const [dataProps, setDataProps] = useState({});    
     const [showProducts, setShowProducts] = useState(products && products.total > 1);
     const [showOrderDetails, setShowOrderDetails] = useState(false);    
+    const [showPurchaseReturnList, setShowPurchaseReturnList] = useState(false);    
+    const [selectedPurchaseDetail, setSelectedPurchaseDetail] = useState([]);    
     const url = window.location.pathname;
     const [multiplier, setMultiplier] = useState("-1");
-    const [totalSum, setTotalSum] = useState(0);
-    const [grandtotal, setGrandtotal] = useState(0);
     const inputRef = useRef(null); 
-    
+
     useEffect(() => {
-        const total = purchaseDetails.reduce((acc, purchaseDetail) => {
-            const totalPerRow = purchaseDetail.quantity * (purchaseDetail.price - purchaseDetail.discount - (purchaseDetail.price * purchaseDetail.discount_percent / 100));
-            return acc + totalPerRow;
-        }, 0);
-        setTotalSum(total);
-        const grandTotal = total - purchase.discount - (total * purchase.discount_percent / 100);
-        setGrandtotal(grandTotal + grandTotal*purchase.ppn/100);
-    }, [purchaseDetails]);
+        // Function to handle keydown event
+        const handleKeyDown = (event) => {
+            if (event.key === "F2") {
+                setShowPaymentForm(true);
+            }
+        };
+
+        // Adding keydown event listener when the component is mounted
+        window.addEventListener("keydown", handleKeyDown);
+
+        // Cleanup event listener when component is unmounted
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);    
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
@@ -99,10 +108,10 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
         });
     }
 
-    const handleUpdateConfirmation = () => {
-        setShowUpdateConfirmation(true);
-        setDataProps(purchase);        
-    }
+    // const handleUpdateConfirmation = () => {
+    //     setShowUpdateConfirmation(true);
+    //     setDataProps(purchase);        
+    // }
 
     const handleChange = (event) => {
         setDataProps((prevData) => ({
@@ -148,19 +157,19 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                     <div className="w-full px-3  border-2 border-gray-300">
                         <h2 className="text-xl font-bold text-center">Details</h2>
                         {!purchase.approve_purchase_date ?
-                            <div className="grid grid-cols-2 gap-4 mb-3">
-                                <div className='ml-2'>          
+                            <div className="flex flex-col md:grid md:grid-cols-2 gap-4 mb-3">
+                                <div className="ml-2 flex flex-col md:flex-row">        
                                     {purchaseDetails && purchaseDetails.length>0 &&
                                     <button
-                                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-4"
-                                        onClick={handleUpdateConfirmation}
+                                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-0 md:mr-4 mb-2 md:mb-0"
+                                        onClick={() =>setShowPaymentForm(true)}
                                     >
                                         Approve Purchasing
                                         </button>
                                     }
                                     {purchase.order_date &&
                                         <button
-                                            className="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-2 rounded mr-4"
+                                            className="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-2 rounded"
                                             onClick={()=>{setShowOrderDetails(true)}}
                                         >
                                             Add Detail From Order
@@ -169,7 +178,7 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                 </div>
 
                                 <div className="flex justify-end items-center mr-2">
-                                    <input className="appearance-none  bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                                    <input className="appearance-none w-full md:w-auto bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                                         name="name"
                                         type="text"
                                         placeholder='Search & Enter...'
@@ -190,7 +199,8 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                 readOnly
                             />
                         </div>
-                        <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400 ">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400 ">
                             <thead className="text-xs text-black border-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" className="px-6 py-3" width="5%">
@@ -206,7 +216,13 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                     }                              
                                     <th scope="col" className="px-6 py-3">
                                         Qty
-                                    </th>
+                                        </th>
+                                    {
+                                        purchase.approve_purchase_date &&
+                                        <th scope="col" className="px-6 py-3">
+                                            Ret
+                                        </th>
+                                    }                                    
                                     <th scope="col" className="px-6 py-3">
                                         Unit
                                     </th>
@@ -221,11 +237,8 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                     </th>                                     
                                     <th scope="col" className="px-6 py-3">
                                         Total
-                                    </th>                                     
-                                    {!purchase.approve_purchase_date &&
-                                        <th scope="col" className="px-6 py-3" width="5%">#</th>
-                                    }
-                                
+                                    </th>                                    
+                                    <th scope="col" className="px-6 py-3 print:hidden" width="5%">#</th>                                
                                 </tr>
                             </thead>
                             <tbody>
@@ -270,10 +283,15 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                                 required
                                             />
                                             :
-                                            Number(purchaseDetail.quantity).toLocaleString()}</td>
-
-                                            <td className="px-6 py-4">{purchaseDetail.product ? purchaseDetail.product.unit.name : ""}</td>
-                                        <td className="px-6 py-4 cursor-pointer">{isEditing && purchaseDetail.id == dataProps.id ?
+                                                    Number(purchaseDetail.quantity).toLocaleString()}</td>
+                                            {
+                                                    purchase.approve_purchase_date &&                                             <td className="px-6 py-4">{purchaseDetail.purchase_detail_returns_sum_quantity ? Number(purchaseDetail.purchase_detail_returns_sum_quantity).toLocaleString() : 0}</td>    
+                                            }             
+                                            {
+                                                purchase.approve_purchase_date &&
+                                                <td className="px-6 py-4">{purchaseDetail.product ? purchaseDetail.product.unit.name : ""}</td>
+                                            }
+                                            <td className="px-6 py-4 cursor-pointer">{isEditing && purchaseDetail.id == dataProps.id ?
                                             <input
                                                 className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                                                 id="grid-minimum-stok"
@@ -350,7 +368,20 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                                     />}
 
                                             </td>
-                                        }
+                                            }
+                                            {
+                                                purchase.approve_purchase_date && <td className="print:hidden">
+                                                    <GiReturnArrow
+                                                        title="return"
+                                                        size={20}
+                                                        onClick={() => {
+                                                            setShowPurchaseReturnList(true);
+                                                            setSelectedPurchaseDetail(purchaseDetail);
+                                                        }}
+                                                        className="cursor-pointer"     
+                                                        color={"red"}/> 
+                                                </td>
+                                            }
                                     </tr>
                                     ))}
                                 <tr>
@@ -359,6 +390,10 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                     {purchase.order_date &&
                                         <td className="print:hidden"></td>
                                     }
+                                    {
+                                        purchase.approve_purchase_date &&
+                                        <td></td>
+                                    }                                        
                                     <td></td>
                                     <td></td>
                                     <td></td>
@@ -368,7 +403,9 @@ const Detail = ({ purchase, products, purchaseDetails}) => {
                                     <td></td>
                                 </tr>
                             </tbody>
-                        </table>
+                            </table>
+                            {showPurchaseReturnList && <PurchaseReturnList setShowPurchaseReturnList={setShowPurchaseReturnList} purchaseDetail={selectedPurchaseDetail} flash={flash} />}      
+                        </div>     
                     </div>
                 </div>
             }

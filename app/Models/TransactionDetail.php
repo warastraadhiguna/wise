@@ -40,4 +40,9 @@ class TransactionDetail extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function transactionDetailReturns()
+    {
+        return $this->hasMany(TransactionDetailReturn::class);
+    }
 }

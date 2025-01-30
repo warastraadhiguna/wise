@@ -234,7 +234,14 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                                                         {Number(transaction.transaction_payments_sum_amount
                                                         ).toLocaleString()}
                                                     </td>
-                                                </tr>                                               
+                                            </tr>
+                                                <tr>
+                                                    <td className="font-semibold">Return</td>
+                                                    <td>:</td>
+                                                    <td>Rp.{" "}
+                                                        {Number(transaction.total_return_amount
+                                                        ).toLocaleString()}</td>
+                                                </tr>                 
                                         </tbody>
                                     </table>
                                 </td>                                

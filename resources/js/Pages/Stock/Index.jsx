@@ -160,7 +160,7 @@ const Index = ({ title, stocks, selectedStock, searchingTextProps, perPageProps,
                                 <input
                                     type="text"
                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                    value={`${Number(selectedStock.lastInfo.price).toLocaleString()}`}
+                                    value={`${Number(selectedStock.lastInfo.last_price).toLocaleString()}`}
                                     disabled
                                 />
                             </div>        
@@ -169,7 +169,7 @@ const Index = ({ title, stocks, selectedStock, searchingTextProps, perPageProps,
                                 <input
                                     type="text"
                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                                    value={`${Number(selectedStock.averagePrice).toLocaleString()}`}
+                                    value={`${Number(selectedStock.lastInfo.average_price).toLocaleString()}`}
                                     disabled
                                 />
                             </div>            

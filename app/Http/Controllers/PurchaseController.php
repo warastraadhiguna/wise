@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Stock;
@@ -10,7 +11,10 @@ use App\Models\Supplier;
 use Illuminate\Http\Request;
 use App\Models\PaymentStatus;
 use App\Models\PurchaseDetail;
+use App\Models\PurchasePayment;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class PurchaseController extends Controller
 {
@@ -53,8 +57,20 @@ class PurchaseController extends Controller
                     )
                 ) as grand_total
             '))
-            ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails', 'purchaseDetails.product', 'purchaseDetails.product.unit', 'supplier', 'paymentStatus')
-            ->withSum('purchasePayment', 'amount')
+            ->addSelect(DB::raw('(
+                SELECT SUM(pdr.quantity * (
+                    (
+                        (pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)
+                    ) 
+                    * (1 - IFNULL(p.discount_percent, 0) / 100) - IFNULL(p.discount, 0)
+                ) * (1 + IFNULL(p.ppn, 0) / 100))
+                FROM purchase_detail_returns pdr
+                JOIN purchase_details pd ON pdr.purchase_detail_id = pd.id
+                JOIN purchases p ON pd.purchase_id = p.id
+                WHERE pd.purchase_id = purchases.id
+            ) AS total_return_amount'))
+            ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails', 'purchaseDetails.product', 'purchaseDetails.product.unit', 'supplier', 'paymentStatus', 'purchasePayments', 'purchasePayments.user')
+            ->withSum('purchasePayments', 'amount')
             ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
             ->where(function ($query) use ($searchingText) {
                 $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ["%$searchingText%"])
@@ -107,7 +123,7 @@ class PurchaseController extends Controller
     {
         $newPurchase = Purchase::create([
             'user_id' => $request->user()->id,
-            'purchase_number'  => $this->generatePurchaseNumber(),
+            'purchase_number'  =>  '', //$this->generatePurchaseNumber(),
             'purchase_date' => Carbon::now(),
             'payment_status_id' => 1,
         ]);
@@ -129,14 +145,14 @@ class PurchaseController extends Controller
         }, 'orderUser', 'approvedOrderUser', 'purchaseDetails.product', 'purchaseUser', 'approvedUser'])
             ->find($id);
 
-        if (!$purchase->purchase_number) {
-            $purchase->update([
-                'user_id' => $request->user()->id,
-                'purchase_number'  => $this->generatePurchaseNumber(),
-                'purchase_date' => Carbon::now(),
-                'payment_status_id' => 1,
-            ]);
-        }
+        // if (!$purchase->purchase_number) {
+        //     $purchase->update([
+        //         'user_id' => $request->user()->id,
+        //         'purchase_number'  => '', //$this->generatePurchaseNumber(),
+        //         'purchase_date' => Carbon::now(),
+        //         'payment_status_id' => 1,
+        //     ]);
+        // }
 
         $purchaseDetail = $purchase->purchaseDetails->firstWhere(function ($purchaseDetail) use ($searchingText) {
             return $purchaseDetail->product &&
@@ -177,7 +193,7 @@ class PurchaseController extends Controller
         $data = [
             'title' => 'Edit Purchase',
             'purchase' => $purchase,
-            'purchaseDetails' => PurchaseDetail::with('product', 'product.unit')->where('purchase_id', '=', $id)->orderBy('created_at', 'desc')->get(),
+            'purchaseDetails' => PurchaseDetail::with('product', 'product.unit', 'purchaseDetailReturns', 'purchaseDetailReturns.user')->withSum('purchaseDetailReturns', 'quantity')->where('purchase_id', '=', $id)->orderBy('created_at', 'desc')->get(),
             'previousUrl' => session()->has('previousUrlPurchase') ? session('previousUrlPurchase') : "/purchase",
             'suppliers' => Supplier::get(),
             'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
@@ -192,12 +208,66 @@ class PurchaseController extends Controller
         $purchase = Purchase::withTrashed()->findOrFail($id);
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
-            $purchase->update([
-                'approved_user_id' => $request->user()->id,
-                'approve_purchase_date' => Carbon::now()
+            $paymentStatus = PaymentStatus::find(Request()->input("payment_status_id"));
+
+            $request->merge([
+                'payment' => (float) $request->input('payment'),
+                'grandTotal' => (float) $request->input('grandTotal'),
             ]);
 
-            redirect()->to("purchase/$purchase->id/edit")->with("success", 'Data berhasil diapprove.');
+
+            $validator = Validator::make($request->all(), [
+                'payment_status_id' => 'required',
+                'discount' => 'required|numeric',
+                'discount_percent' => 'required|numeric|max:90',
+                'ppn' => 'required|numeric|max:50',
+                'grandTotal' => 'required|numeric',
+                'payment' => [
+                    'required',
+                    'numeric',
+                    'min:0',
+                    Rule::when($paymentStatus && $paymentStatus->is_done == 1, 'gte:grandTotal'),
+                    Rule::when($paymentStatus && $paymentStatus->is_done == 0, 'lt:grandTotal'),
+                ],
+            ], [
+                'discount_percent.max' => 'Discount percent tidak boleh lebih dari :max%.',
+                'payment.gte' => 'Jika metode yang dipilih langsung lunas, maka payment harus sama atau lebih dari Grand Total.',
+                'payment.lt' => 'Jika metode yang dipilih tidak langsung lunas, maka payment harus kurang dari Grand Total.',
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+
+            $data = $validator->validated();
+            $data['approved_user_id'] = $request->user()->id;
+            $data['approve_purchase_date'] =  Carbon::now();
+
+
+            try {
+
+                DB::beginTransaction();
+
+                $purchase->update($data);
+
+                PurchasePayment::create([
+                    'purchase_id' => $purchase->id,
+                    'user_id' => $request->user()->id,
+                    'amount' => $paymentStatus && $paymentStatus->is_done == 1 ? $data['grandTotal'] : $data['payment'],
+                    'payment' => $data['payment'],
+                    'note' => "",
+                ]);
+
+                DB::commit();
+
+                redirect()->to("purchase/$purchase->id/edit")->with("success", 'Data berhasil diapprove.');
+
+            } catch (Exception $e) {
+                DB::rollback();
+                return redirect()->to("purchase/$purchase->id/edit")->with("error", 'Data gagal diapprove.');
+            }
         }
 
         if ($purchase->deleted_at) {
@@ -219,6 +289,7 @@ class PurchaseController extends Controller
             ],
             [
                 'supplier_id.required' => 'Supplier wajib diisi.',
+                'purchase_number.required' => 'Nomor Purchase wajib diisi',
             ]
         );
 

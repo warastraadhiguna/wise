@@ -33,16 +33,16 @@ class Purchase extends Model
         'approve_purchase_date'
     ];
 
-    protected static function booted()
-    {
-        static::created(function ($purchase) {
-            PurchasePayment::create([
-                'purchase_id' => $purchase->id,
-                'user_id' => $purchase->user_id ?? $purchase->order_user_id,
-                'amount' => 0,
-            ]);
-        });
-    }
+    // protected static function booted()
+    // {
+    //     static::created(function ($purchase) {
+    //         PurchasePayment::create([
+    //             'purchase_id' => $purchase->id,
+    //             'user_id' => $purchase->user_id ?? $purchase->order_user_id,
+    //             'amount' => 0,
+    //         ]);
+    //     });
+    // }
 
     public function orderUser()
     {
@@ -84,7 +84,7 @@ class Purchase extends Model
         return $this->belongsTo(PaymentStatus::class);
     }
 
-    public function purchasePayment()
+    public function purchasePayments()
     {
         return $this->hasMany(PurchasePayment::class);
     }

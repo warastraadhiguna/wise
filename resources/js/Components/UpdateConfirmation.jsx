@@ -8,11 +8,11 @@ const UpdateConfirmation = ({ setShowUpdateConfirmation, dataProps, handleUpdate
           <div className="bg-white relative rounded-md">
               <header className='border-b py-2 px-6 font-bold text-xl'>Confirmation</header>
               <div className="p-6">
-                  <h4>Anda yakin mengubah data <strong>{dataProps.name ?? "ini"}</strong>?</h4>
+                  <h4>Are you sure to update <strong>{dataProps.name ?? " the data"}?</strong>?</h4>
                   
                   <div className="flex gap-4 mt-4 justify-end items-center">
-                      <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-1' onClick={handleUpdate} disabled={ isProcessing }>Yakin</button>
-                      <button className='px-4 py-2 text-sm bg-red-600 text-white rounded-md'  onClick={() => setShowUpdateConfirmation(false)} disabled={ isProcessing }>Tidak</button>
+                      <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded mr-1' onClick={handleUpdate} disabled={ isProcessing }>Yes</button>
+                      <button className='px-4 py-1  bg-red-600 text-white rounded-md  font-bold '  onClick={() => setShowUpdateConfirmation(false)} disabled={ isProcessing }>No</button>
                       
                   </div>
               </div>  

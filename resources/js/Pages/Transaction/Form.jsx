@@ -19,14 +19,13 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed); 
     };    
-    
 
     const [dataProps, setDataProps] = useState({
         id: transaction.id, 
         customer_id: transaction.customer_id, 
         number: transaction.number, 
         transaction_date: transaction.transaction_date, 
-        transaction_note: transaction.transaction_note, 
+        note: transaction.note, 
         payment_status_id: transaction.payment_status_id,
         discount: transaction.discount,
         discount_percent: transaction.discount_percent,
@@ -40,7 +39,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
         label: customers[key].name + " - " + customers[key].company_name,
     }));    
 
-    const paymentStatusOptions = Object.keys(paymentStatuses).map((key) => ({
+    const paymentStatusOptions = Object.keys(paymentStatuses).filter((key) => paymentStatuses[key].is_sale === 1).map((key) => ({
         value: paymentStatuses[key].id,
         label: paymentStatuses[key].name.toUpperCase(),
     }));        
@@ -55,7 +54,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
             setDataProps((prevData) => ({
                 ...prevData,
                 [event.target.name]: event.target.value,
-                change:(grandtotal-event.target.value)
+                change:paymentStatuses.find((status) => status.id === dataProps.payment_status_id).is_done == 1? (grandtotal-event.target.value) : 0
             }));
         } else {
             setDataProps((prevData) => ({
@@ -63,13 +62,14 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                 [event.target.name]: event.target.value,
             }));
         }
-
     };
 
     const handleOptionChange = (selectedOption, name = "") => {
         setDataProps((prevData) => ({
             ...prevData,
-            [name]: selectedOption? selectedOption.value : null,
+            [name]: selectedOption ? selectedOption.value : null,
+            payment: 0,
+            change:0,
         }));
     };    
 
@@ -126,7 +126,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
                                     htmlFor="grid-name"
                                 >
-                                    Purchase Number
+                                    Transaction Number
                                 </label>
                                 <input
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
@@ -148,16 +148,16 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
                                     htmlFor="grid-transaction-date"
                                 >
-                                    Transaction Date
+                                    Transaction Date 
                                 </label>
                                 <input
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                                     id="grid-transaction-date"
                                     type="date"
                                     name="transaction_date"
-                                    value={"2024-11-12"}
+                                    value={dataProps.transaction_date }
                                     disabled={
-                                        transaction.deleted_at || isProcessing || transaction.approve_transaction_date
+                                        transaction.deleted_at || isProcessing || transaction.approve_transaction_date || auth.user.role === 'user'
                                     }
                                     onChange={(event) => handleChange(event)}
                                 />
@@ -179,15 +179,15 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                 <textarea
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                                     id="grid-transaction-note"
-                                    name="transaction_note"
-                                    value={dataProps.transaction_note ?? ""}
+                                    name="note"
+                                    value={dataProps.note ?? ""}
                                     disabled={
                                         transaction.deleted_at || isProcessing || transaction.approve_transaction_date
                                     }
                                     onChange={(event) => handleChange(event)} />
-                                {errors && errors.transaction_note && (
+                                {errors && errors.note && (
                                     <div className="text-red-700 text-sm mt-2">
-                                        {errors.transaction_note}
+                                        {errors.note}
                                     </div>
                                 )}
                             </div>
@@ -356,7 +356,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                 ) : <div className="text-sm text-right mr-3" onClick={toggleCollapse}>Click to more transaction information</div> }
             </div>    
 
-            <Detail transaction={transaction} products={products} transactionDetails={transactionDetails} setShowPaymentForm={setShowPaymentForm} totalSum={totalSum} grandtotal={ grandtotal } />
+            <Detail transaction={transaction} products={products} transactionDetails={transactionDetails} setShowPaymentForm={setShowPaymentForm} totalSum={totalSum} grandtotal={grandtotal} flash={ flash } />
 
             {showPaymentForm && <Payment setShowPaymentForm={setShowPaymentForm} dataProps={dataProps} totalSum={totalSum} errors={errors} setIsProcessing={setIsProcessing } isProcessing={isProcessing} transaction={transaction} paymentStatusOptions={paymentStatusOptions} handleChange={handleChange} selectedPaymentStatusOption={selectedPaymentStatusOption} isEditNumberInput={isEditNumberInput} auth={auth} handleOptionChange={handleOptionChange} setIsEditNumberInput={setIsEditNumberInput} /> }  
         </AdminLayout>

@@ -41,4 +41,9 @@ class PurchaseDetail extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function purchaseDetailReturns()
+    {
+        return $this->hasMany(PurchaseDetailReturn::class);
+    }
 }

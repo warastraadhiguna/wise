@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import Select from "react-select";
 import Detail from "./Detail";
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi'; 
+import Payment from "./Payment";
 
 const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetails, paymentStatuses}) => {
 
@@ -12,8 +13,22 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
     const [isEditNumberInput, setIsEditNumberInput] = useState("");        
     const [isOrderCollapsed, setIsOrderCollapsed] = useState(purchase.supplier_id && purchase.approve_order_date); 
 
+    const [showPaymentForm, setShowPaymentForm] = useState(false);  
     const [isCollapsed, setIsCollapsed] = useState(purchase.supplier_id && purchase.purchase_date);     
+    const [totalSum, setTotalSum] = useState(0);
+    const [grandtotal, setGrandtotal] = useState(0);
 
+    useEffect(() => {
+        const total = purchaseDetails.reduce((acc, purchaseDetail) => {
+            const totalPerRow = purchaseDetail.quantity * (purchaseDetail.price - purchaseDetail.discount - (purchaseDetail.price * purchaseDetail.discount_percent / 100));
+            return acc + totalPerRow;
+        }, 0);
+        setTotalSum(total);
+        const grandTotal = total - purchase.discount - (total * purchase.discount_percent / 100);
+        setGrandtotal(grandTotal + grandTotal*purchase.ppn/100);
+    }, [purchaseDetails]);
+
+    
     const toggleOrderCollapse = () => {
         setIsOrderCollapsed(!isOrderCollapsed); 
     };
@@ -22,7 +37,6 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
         setIsCollapsed(!isCollapsed); 
     };    
     
-
     const [dataProps, setDataProps] = useState({
         id: purchase.id, 
         supplier_id: purchase.supplier_id, 
@@ -32,7 +46,9 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
         payment_status_id: purchase.payment_status_id,
         discount: purchase.discount,
         discount_percent: purchase.discount_percent,
-        ppn: purchase.ppn
+        ppn: purchase.ppn,
+        payment: 0,
+        change:0,        
     });
 
     const supplierOptions = Object.keys(suppliers).map((key) => ({
@@ -40,27 +56,38 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
         label: suppliers[key].name + " - " + suppliers[key].company_name,
     }));    
 
-    const paymentStatusOptions = Object.keys(paymentStatuses).map((key) => ({
+    const paymentStatusOptions = Object.keys(paymentStatuses).filter((key) => paymentStatuses[key].is_purchase === 1).map((key) => ({
         value: paymentStatuses[key].id,
         label: paymentStatuses[key].name.toUpperCase(),
     }));        
 
-    const seletedSupplierOption = supplierOptions.find(option => option.value === purchase.supplier_id);
-    const seletedPaymentStatusOption = paymentStatusOptions.find(option => option.value === purchase.payment_status_id);
+    const selectedSupplierOption = supplierOptions.find(option => option.value === purchase.supplier_id);
+    const selectedPaymentStatusOption = paymentStatusOptions.find(option => option.value === purchase.payment_status_id);
     
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handleChange = (event) => {
-        setDataProps((prevData) => ({
-            ...prevData,
-            [event.target.name]: event.target.value,
-        }));
-    };
+        if (event.target.name === "payment") {
+            setDataProps((prevData) => ({
+                ...prevData,
+                [event.target.name]: event.target.value,
+                change:paymentStatuses.find((status) => status.id === dataProps.payment_status_id).is_done == 1? (grandtotal-event.target.value) : 0
+            }));
+        } else {
+            setDataProps((prevData) => ({
+                ...prevData,
+                [event.target.name]: event.target.value,
+            }));
+        }
+
+    };    
 
     const handleOptionChange = (selectedOption, name = "") => {
         setDataProps((prevData) => ({
             ...prevData,
             [name]: selectedOption.value,
+            payment: 0,
+            change:0,            
         }));
     };    
 
@@ -183,7 +210,7 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
                                             className="basic-single"
                                             classNamePrefix="select"
                                             onChange={handleOptionChange}
-                                            defaultValue={seletedSupplierOption}
+                                            defaultValue={selectedSupplierOption}
                                             isDisabled={purchase.deleted_at || isProcessing || purchase.approve_order_date }
                                         />
                                     </div>
@@ -225,9 +252,9 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
                                     id="grid-purchase-number"
                                     name="purchase_number"
-                                    value={dataProps.purchase_number}
+                                    value={dataProps.purchase_number?? ""}
                                     type="text"
-                                    disabled={true}
+                                    // disabled={true}
                                     onChange={(event) => handleChange(event)}
                                 />
                                 {errors && errors.purchase_number && (
@@ -299,7 +326,7 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
                                         className="basic-single"
                                         classNamePrefix="select"
                                         onChange={(selectedOption) => handleOptionChange(selectedOption, 'supplier_id')}
-                                        defaultValue={seletedSupplierOption}
+                                        defaultValue={selectedSupplierOption}
                                         isDisabled={purchase.deleted_at || isProcessing || purchase.approve_order_date || purchase.approve_purchase_date  }
                                     />
                                 </div>
@@ -325,7 +352,7 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
                                         className="basic-single"
                                         classNamePrefix="select"
                                         onChange={(selectedOption) => handleOptionChange(selectedOption, 'payment_status_id')}
-                                        defaultValue={seletedPaymentStatusOption }
+                                        defaultValue={selectedPaymentStatusOption }
                                         isDisabled={purchase.deleted_at || isProcessing || purchase.approve_purchase_date }
                                     />
                                 </div>
@@ -448,9 +475,11 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
                 ) : <div className="text-sm text-right mr-3" onClick={toggleCollapse}>Click to more purchase information</div> }
             </div>    
 
-            {purchase.supplier_id && 
-                <Detail purchase={purchase} products={ products } purchaseDetails={purchaseDetails} />
+            {purchase.supplier_id && purchase.purchase_date && purchase.purchase_number  &&
+                <Detail purchase={purchase} products={products} purchaseDetails={purchaseDetails} setShowPaymentForm={setShowPaymentForm} totalSum={totalSum} grandtotal={grandtotal} flash={ flash } />
             }                    
+
+            {purchase.supplier_id && purchase.purchase_date && purchase.purchase_number && showPaymentForm && <Payment setShowPaymentForm={setShowPaymentForm} dataProps={dataProps} totalSum={totalSum} errors={errors} setIsProcessing={setIsProcessing } isProcessing={isProcessing} purchase={purchase} paymentStatusOptions={paymentStatusOptions} handleChange={handleChange} selectedPaymentStatusOption={selectedPaymentStatusOption} isEditNumberInput={isEditNumberInput} auth={auth} handleOptionChange={handleOptionChange} setIsEditNumberInput={setIsEditNumberInput} /> }              
         </AdminLayout>
     );
 };

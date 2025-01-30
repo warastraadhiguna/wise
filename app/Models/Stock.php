@@ -137,26 +137,121 @@ class Stock extends Model
             return null;
         }
 
-        $query = "SELECT a.*, d.name as unit_name, ifNull(b.quantity,0) as quantity, ifNull(b.price,0) as price from products a
-        left join purchase_details b on b.product_id=a.id and b.deleted_at is null
-        left join purchases c on b.purchase_id=c.id and c.approve_purchase_date is not null  and c.deleted_at is null
-        inner join units d on a.unit_id=d.id
-        where a.id=$productId
-        order by c.purchase_date desc";
+        $query = "SELECT
+    a.id, a.code, a.name,
+    d.name AS unit_name,
+    IFNULL(SUM(pi.quantity), NULL) AS quantity,
+    IFNULL(SUM(pi.adjusted_price * pi.quantity) / NULLIF(SUM(pi.quantity), 0), NULL) AS average_price,
+    (
+        SELECT 
+            subquery.adjusted_price
+        FROM 
+            (
+                SELECT 
+                    pd.product_id,
+                    pd.quantity,
+                    (
+                        ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
+                        (1 - IFNULL(p.discount_percent, 0) / 100) -
+                        (
+                            IFNULL(p.discount, 0) * 
+                            (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
+                                NULLIF(
+                                    (
+                                        SELECT 
+                                            SUM(
+                                                (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
+                                            )
+                                        FROM 
+                                            purchase_details pd_sub
+                                        WHERE 
+                                            pd_sub.purchase_id = p.id
+                                            AND pd_sub.deleted_at IS NULL
+                                    ),
+                                    0
+                                )
+                            )
+                        ) *
+                        (1 + IFNULL(p.ppn, 0) / 100)
+                    ) AS adjusted_price,
+                    p.purchase_date
+                FROM 
+                    purchase_details pd
+                INNER JOIN purchases p 
+                    ON pd.purchase_id = p.id
+                WHERE 
+                    pd.deleted_at IS NULL
+                    AND p.deleted_at IS NULL
+                    AND p.approve_purchase_date IS NOT NULL
+            ) AS subquery
+        WHERE 
+            subquery.product_id = a.id
+        ORDER BY 
+            subquery.purchase_date DESC
+        LIMIT 1
+    ) AS last_price
+FROM
+    products a
+LEFT JOIN (
+    SELECT 
+        pd.product_id,
+        pd.quantity,
+        (
+            ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
+            (1 - IFNULL(p.discount_percent, 0) / 100) -
+            (
+                IFNULL(p.discount, 0) * 
+                (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
+                    NULLIF(
+                        (
+                            SELECT 
+                                SUM(
+                                    (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
+                                )
+                            FROM 
+                                purchase_details pd_sub
+                            WHERE 
+                                pd_sub.purchase_id = p.id
+                                AND pd_sub.deleted_at IS NULL
+                        ),
+                        0
+                    )
+                )
+            ) *
+            (1 + IFNULL(p.ppn, 0) / 100)
+        ) AS adjusted_price
+    FROM 
+        purchase_details pd
+    INNER JOIN purchases p 
+        ON pd.purchase_id = p.id
+    WHERE
+        pd.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+        AND p.approve_purchase_date IS NOT NULL
+) pi
+    ON pi.product_id = a.id
+INNER JOIN units d
+    ON a.unit_id = d.id
+WHERE
+    a.id = $productId
+GROUP BY
+    a.id, d.name, a.code, a.name
+ORDER BY
+    a.id;";
         // dd($query);
         $stocks = DB::select($query);
         // sum(a.quantity*a.price)/sum(a.quantity) as averagePrice
-        $averagePrice = 0;
-        $totalValue = 0;
-        $quantityTotal = 0;
-        foreach ($stocks as $stock) {
-            $quantityTotal += $stock->quantity;
-            $totalValue  += $stock->quantity * $stock->price;
-        }
+        // $averagePrice = 0;
+        // $totalValue = 0;
+        // $quantityTotal = 0;
+        // foreach ($stocks as $stock) {
+        //     $quantityTotal += $stock->quantity;
+        //     $totalValue  += $stock->quantity * $stock->price;
+        // }
 
-        if ($totalValue > 0 && $quantityTotal > 0) {
-            $averagePrice = $totalValue / $quantityTotal;
-        }
+        // if ($totalValue > 0 && $quantityTotal > 0) {
+        //     $averagePrice = $totalValue / $quantityTotal;
+        // }
 
         $query = "SELECT b.id, ifNull(b.product_id,$productId) as product_id, a.id as price_category_id, a.name, ifNull(b.value, 0) as value, ifNull(b.is_default,0) as is_default FROM price_categories a left join product_price_relations b on a.id=b.price_category_id and product_id=$productId order by a.index ";
 
@@ -176,7 +271,6 @@ class Stock extends Model
         // dd(sizeOf($stocks));
         return [
             "lastInfo" => $stocks && sizeOf($stocks) > 0 ? $stocks[0] : null,
-            "averagePrice" => $averagePrice,
             "prices"    => $prices
         ];
     }
