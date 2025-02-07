@@ -28,7 +28,7 @@ const DistributionFilter = ({ filters, setFilters,  handleFilterButton, isProces
                         onChange={handleFilterChange}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
-                </div>
+                </div>             
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
                     <select
@@ -41,7 +41,20 @@ const DistributionFilter = ({ filters, setFilters,  handleFilterButton, isProces
                         <option value="approved">Approved</option>
                         <option value="pending">Pending</option>
                     </select>
-                </div>                 
+                </div>          
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Is Received?</label>
+                    <select
+                        name="isReceived"
+                        value={filters.isReceived}
+                        onChange={handleFilterChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                        <option value="">All</option>
+                        <option value="1">Received</option>
+                        <option value="0">Pending</option>
+                    </select>
+              </div>                
                 <div>
                     <button
                         type="submit"

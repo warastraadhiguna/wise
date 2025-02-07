@@ -10,7 +10,7 @@ import DistributionFilter from "@/Components/DistributionFilter";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 import dateFormat from "dateformat";
 
-const Index = ({ title, distributions, searchingTextProps,startDate, endDate, paymentMethod, status }) => {
+const Index = ({ title, distributions, searchingTextProps,startDate, endDate, isReceived, status }) => {
 
     const { flash } = usePage().props;
     const url = window.location.pathname;  
@@ -18,23 +18,23 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, pa
     const defaultValueData = {
         id: "", 
     };
-    
+    console.log(isReceived);
     const [dataProps, setDataProps] = useState(defaultValueData);
 
     const [perPage, setPerPage]  = useState(distributions.per_page);
     const [searchingText, setSearchingText] = useState(searchingTextProps);
     
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-    const [selectedDistribution, setSelectedDistribution] = useState([]);
+    // const [selectedDistribution, setSelectedDistribution] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [filters, setFilters] = useState({
         startDate: startDate,
         endDate: endDate,
-        paymentMethod: paymentMethod,
+        isReceived: isReceived,
         status: status,
     });
 
-    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&paymentMethod=${filters.paymentMethod}&status=${filters.status}&paymentStatus=${filters.paymentStatus}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
+    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&status=${filters.status}&isReceived=${filters.isReceived}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
 
     const handleDelete = () => {
         setIsProcessing(true);        

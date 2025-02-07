@@ -28,11 +28,16 @@ class DistributionController extends Controller
         $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
 
         $status = Request()->input("status") ?? "";
+        $isReceived = Request()->input("isReceived") ?? "";
+
         $data = [
             'title' => 'Distribution List',
             'distributions' => Distribution::withTrashed()
             ->with('storeBranch', 'user', 'approvedUser', 'receivedUser')
             ->whereBetween('distribution_date', [$startDate, $endDate])
+            ->when(isset($isReceived), function ($query) use ($isReceived) {
+                return $query->where('is_received', $isReceived);
+            })
             ->when(!empty($status), function ($query) use ($status) {
                 return $status == "approved" ? $query->whereNotNull('approve_date') : $query->whereNull('approve_date');
             })
@@ -46,11 +51,13 @@ class DistributionController extends Controller
                 'startDate' => $startDate,
                 'endDate' => $endDate,
                 'status' => $status,
+                'isReceived' =>  $isReceived
             ]),
             'searchingTextProps' => $searchingText ?? "",
             'startDate' => $startDate,
             'endDate' => $endDate,
             'status' => $status,
+            'isReceived' =>  $isReceived
         ];
 
         return Inertia::render("Distribution/Index", $data);
