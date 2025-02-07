@@ -7,7 +7,6 @@ use Inertia\Inertia;
 use App\Models\Distribution;
 use App\Models\DistributionDetail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
 use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;

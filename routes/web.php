@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DistributionDetailController;
+use App\Models\StoreBranch;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UnitController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\TransactionReportController;
 use App\Http\Controllers\TransactionPaymentController;
 use App\Http\Controllers\ProductPriceRelationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DistributionController;
 use App\Http\Controllers\PurchaseDetailReturnController;
 use App\Http\Controllers\PurchasePaymentController;
@@ -44,9 +46,10 @@ use App\Http\Controllers\TransactionDetailReturnController;
 Route::get('/', [AuthenticatedSessionController::class, 'create']);
 
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::put('/dashboard', [DashboardController::class, 'update'])->middleware(['auth', 'verified'])->name('dashboard.update');
+
 
 Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

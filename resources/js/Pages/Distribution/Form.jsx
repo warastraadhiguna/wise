@@ -30,7 +30,7 @@ const Form = ({ title, distribution, previousUrl, storeBranchs, products, distri
         label: storeBranchs[key].name + " - " + storeBranchs[key].address,
     }));    
 
-    const seletedSupplierOption = storeBranchOptions.find(option => option.value === distribution.store_branch_id);
+    const seletedStoreBranchOption = storeBranchOptions.find(option => option.value === distribution.store_branch_id);
     
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -190,7 +190,7 @@ const Form = ({ title, distribution, previousUrl, storeBranchs, products, distri
                                         className="basic-single"
                                         classNamePrefix="select"
                                         onChange={(selectedOption) => handleOptionChange(selectedOption, 'store_branch_id')}
-                                        defaultValue={seletedSupplierOption}
+                                        defaultValue={seletedStoreBranchOption}
                                         isDisabled={distribution.deleted_at || isProcessing || distribution.approve_order_date || distribution.approve_date  }
                                         isClearable={true} 
                                     />

@@ -29,11 +29,14 @@ class CheckRole
             return stripos($authority->name, explode('/', $request->getPathInfo())[1]) !== false;
         });
 
-        if($role == "superadmin" || (sizeof($filteredByMethod) > 0 && sizeof($filteredByRole) > 0)) {
+        if (!session()->has('selectedStoreBranchId')) {
+            return redirect('/dashboard')->with("error", 'Anda harus memilih toko-saat-ini, terlebih dahulu!!');
+        }
+
+        if ($role == "superadmin" || (sizeof($filteredByMethod) > 0 && sizeof($filteredByRole) > 0)) {
             return $next($request);
         }
 
         return redirect('/dashboard')->with("error", 'Anda tidak berhak menggunakan fitur tersebut.');
-
     }
 }
