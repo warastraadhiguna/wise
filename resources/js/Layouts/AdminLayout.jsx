@@ -8,7 +8,6 @@ import { IoIosLogOut } from "react-icons/io";
 import { MdInventory, MdPolicy } from "react-icons/md";
 import { PiBasketFill } from "react-icons/pi";
 import { BiSolidPurchaseTag, BiSolidReport } from "react-icons/bi";
-import { TbReport } from "react-icons/tb";
 
 const AdminLayout = ({ children, title }) => {
     const { component } = usePage();
@@ -77,10 +76,11 @@ const AdminLayout = ({ children, title }) => {
         {
             icon: <MdInventory size={25} className="mr-1" />,
             text: "Inventories",
-            componentLink: "Stock/Index;Unit/Index;Brand/Index;Product/Index;ProductCategory/Index;Supplier/Index",
+            componentLink: "Stock/Index;Unit/Index;Brand/Index;Product/Index;ProductCategory/Index;Supplier/Index;Distribution/Index",
             link: "#",
             subMenu: [
-                { text: "Stock", link: "/stock", subComponentLink : "Stock/Index" },
+                { text: "Stock", link: "/stock", subComponentLink: "Stock/Index" },
+                { text: "Distribution", link: "/distribution", subComponentLink : "Distribution/Index" },                
                 { text: "Unit", link: "/unit", subComponentLink : "Unit/Index" },
                 { text: "Brand", link: "/brand", subComponentLink : "Brand/Index"  },                
                 { text: "Product Category", link: "/product-category", subComponentLink: "ProductCategory/Index" },

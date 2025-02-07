@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DistributionDetailController;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UnitController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\TransactionReportController;
 use App\Http\Controllers\TransactionPaymentController;
 use App\Http\Controllers\ProductPriceRelationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\DistributionController;
 use App\Http\Controllers\PurchaseDetailReturnController;
 use App\Http\Controllers\PurchasePaymentController;
 use App\Http\Controllers\TransactionDetailReturnController;
@@ -77,6 +79,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     Route::resource('purchase-payment', PurchasePaymentController::class);
 
+    Route::resource('distribution', DistributionController::class);
+    Route::resource('distribution-detail', DistributionDetailController::class);
     Route::resource('purchase-detail-return', PurchaseDetailReturnController::class);
     Route::resource('transaction-detail-return', TransactionDetailReturnController::class);
     Route::resource('product-price-relation', ProductPriceRelationController::class);
