@@ -233,10 +233,7 @@ const Detail = ({ distribution, products, distributionDetails}) => {
                                                     required
                                                 />
                                                 :
-                                                Number(distributionDetail.quantity).toLocaleString()}</td>
-                                                {
-                                                        distribution.approve_date &&                                             <td className="px-6 py-4">{distributionDetail.distribution_detail_returns_sum_quantity ? Number(distributionDetail.distribution_detail_returns_sum_quantity).toLocaleString() : 0}</td>    
-                                                }   
+                                                Number(distributionDetail.quantity).toLocaleString()}</td>  
                                                 <td className="px-6 py-4">{distributionDetail.product ? distributionDetail.product.unit.name : ""}</td>                                                 
                                             {!distribution.approve_date &&
                                                 <td className="px-6 py-4">

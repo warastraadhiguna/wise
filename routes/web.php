@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DistributionDetailController;
+use App\Http\Controllers\DistributionReceiptController;
 use App\Models\StoreBranch;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
@@ -83,6 +84,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('purchase-payment', PurchasePaymentController::class);
 
     Route::resource('distribution', DistributionController::class);
+
+    Route::resource('distribution-receipt', DistributionReceiptController::class);
+
     Route::resource('distribution-detail', DistributionDetailController::class);
     Route::resource('purchase-detail-return', PurchaseDetailReturnController::class);
     Route::resource('transaction-detail-return', TransactionDetailReturnController::class);

@@ -35,7 +35,7 @@ class DistributionController extends Controller
             'distributions' => Distribution::withTrashed()
             ->with('storeBranch', 'user', 'approvedUser', 'receivedUser')
             ->whereBetween('distribution_date', [$startDate, $endDate])
-            ->when(isset($isReceived), function ($query) use ($isReceived) {
+            ->when($isReceived != "", function ($query) use ($isReceived) {
                 return $query->where('is_received', $isReceived);
             })
             ->when(!empty($status), function ($query) use ($status) {

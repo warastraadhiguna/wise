@@ -3,12 +3,12 @@ import { Link, router, usePage } from "@inertiajs/react";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {  FaPencilAlt, FaRegTrashAlt } from "react-icons/fa";
-import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
 import DistributionFilter from "@/Components/DistributionFilter";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 import dateFormat from "dateformat";
+import Form from "./Form";
 
 const Index = ({ title, distributions, searchingTextProps,startDate, endDate, isReceived, status }) => {
 
@@ -17,15 +17,16 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, is
 
     const defaultValueData = {
         id: "", 
+        receiption_note: "",
+        is_received: 0
     };
 
     const [dataProps, setDataProps] = useState(defaultValueData);
+    const [showForm, setShowForm] = useState(false);
 
     const [perPage, setPerPage]  = useState(distributions.per_page);
     const [searchingText, setSearchingText] = useState(searchingTextProps);
     
-    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-    // const [selectedDistribution, setSelectedDistribution] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [filters, setFilters] = useState({
         startDate: startDate,
@@ -34,25 +35,27 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, is
         status: status,
     });
 
-    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&status=${filters.status}&isReceived=${filters.isReceived}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
+    const resetForm = (all) => {
+        if (all) {
+            setDataProps(defaultValueData);            
+            setShowForm(false);
+        }
 
-    const handleDelete = () => {
-        setIsProcessing(true);        
-    
-        router.delete(`/distribution/${dataProps.id}`,  {
-            onFinish: () => {
-                setShowDeleteConfirmation(false);
-                setIsProcessing(false);                
-            }
-        });
-    }    
-
-    const handleDeleteConfirmation = (distribution) => {
-        setShowDeleteConfirmation(true);
-        setDataProps({
-            ...distribution
-        });
+        if (flash) {
+            flash.success = "";
+            flash.error = "";
+        }
+        setIsProcessing(false);
     }
+
+    const handleShowForm = (data) => {
+
+
+        setShowForm(true);
+        setDataProps(data);
+    };    
+
+    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&status=${filters.status}&isReceived=${filters.isReceived}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
 
     const handleFilterButton = (e) => {
         setIsProcessing(true);
@@ -65,12 +68,36 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, is
         });
     };
 
+    const actionForm = (e) => {
+        e.preventDefault();        
+        setIsProcessing(true);
+
+        router.put(`distribution-receipt/${dataProps.id}`, dataProps, {
+            onSuccess: () => {
+                resetForm(true);
+            },
+            onError: () => {
+                resetForm(false);
+            }
+        });
+    }    
+
     useEffect(() => {
         flash.success && toast.success(flash.success);
         flash.error && toast.error(flash.error);
     }, [flash]);
     return (
         <AdminLayout title={title}>
+            {showForm && (
+                <Form
+                    setShowForm={setShowForm}
+                    dataProps={dataProps}
+                    setDataProps={setDataProps}
+                    action={actionForm}
+                    distributionDetails={dataProps.distribution_details}
+                    isProcessing={isProcessing}
+                />
+            )}            
             <DistributionFilter filters={filters} setFilters={setFilters} handleFilterButton={ handleFilterButton} />
             
             <div  className="flex items-center ml-1">
@@ -92,10 +119,7 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, is
                         <tr>
                             <th scope="col" className="px-6 py-3">
                                 No
-                            </th>
-                            <th scope="col" className="px-6 py-3">
-                                Store Branch
-                            </th>                         
+                            </th>                       
                             <th scope="col" className="px-6 py-3">
                                 Distribution
                             </th>        
@@ -118,8 +142,7 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, is
                                     className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white "
                                 >
                                     {(distributions.current_page - 1) * distributions.per_page + i + 1}
-                                </td>
-                                <td className="px-6 py-4">{distribution.store_branch?distribution.store_branch.name : ""}</td>                                     
+                                </td>                               
                                 <td className="px-6 py-4">
                                     <table className="w-full">
                                         <tbody>
@@ -184,35 +207,19 @@ const Index = ({ title, distributions, searchingTextProps,startDate, endDate, is
                                 </td>                                   
                                 <td className="px-6 py-4">
                                     <div className="flex items-center justify-center gap-2">
-                                        <Link href={`distribution/${distribution.id}/edit`} className="flex items-center ml-1">
-                                            <FaPencilAlt
-                                                size={20}
-                                                color={ distribution.deleted_at? "#c2bc42" : "green"}
-                                                className="cursor-pointer"
-                                            />    
-                                        </Link>      
-                                        {!distribution.is_received &&
-                                            <React.Fragment>
-                                            {" "} | {" "}
-                                                <FaRegTrashAlt
-                                                size={20}
-                                                color={ distribution.deleted_at? "#e18859" : "red"}
-                                                className="cursor-pointer"
-                                                onClick={() =>
-                                                    handleDeleteConfirmation(distribution)
-                                                }
-                                                    />
-                                            </React.Fragment>
-                                        }
-                                        
+                                        <FaPencilAlt
+                                            size={20}
+                                            color={ distribution.deleted_at? "#c2bc42" : "green"}
+                                            className="cursor-pointer"
+                                            onClick={() => handleShowForm(distribution)}                                            
+                                        />                                            
                                     </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-            </div>         
-            {showDeleteConfirmation && <DeleteConfirmation setShowDeleteConfirmation={setShowDeleteConfirmation} dataProps={dataProps} handleDelete={handleDelete} isProcessing={isProcessing}/>}            
+            </div>                 
             <Pagination data={distributions}></Pagination>
         </AdminLayout>
     );
