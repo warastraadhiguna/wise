@@ -78,6 +78,7 @@ class TransactionController extends Controller
                 $query->whereRaw('IFNULL(customers.name, "") LIKE ?', ["%$searchingText%"])
                     ->orWhereRaw('IFNULL(customers.company_name, "") LIKE ?', ["%$searchingText%"]);
             })
+            ->where('store_branch_id', session('selectedStoreBranchId'))
             ->whereNotNull('transactions.user_id')
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->when($paymentMethod, function ($query) use ($paymentMethod) {
@@ -126,6 +127,7 @@ class TransactionController extends Controller
             'number'  => $this->generateTransactionNumber(),
             'transaction_date' => Carbon::now(),
             'payment_status_id' => 1,
+            'store_branch_id' => session('selectedStoreBranchId')
         ]);
 
         return redirect()->route('transaction.edit', $newTransaction->id);
@@ -144,6 +146,10 @@ class TransactionController extends Controller
             $query->orderBy('updated_at', 'desc');
         }, 'transactionDetails.product', 'transactionUser', 'approvedUser'])
             ->find($id);
+
+        if ($transaction->store_branch_id <> session('selectedStoreBranchId')) {
+            return redirect()->to("transaction")->with("error", 'Nota hanya bisa diedit, oleh toko dimana nota dibuat!!');
+        }
 
         if (!$transaction->number) {
             $transaction->update([

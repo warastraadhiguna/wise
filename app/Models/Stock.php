@@ -33,7 +33,8 @@ class Stock extends Model
 
         $offset = ($page - 1) * $perPage;
 
-        $sql = "SELECT *, purchase_quantity-transaction_quantity as quantity from (SELECT a.id, a.product_category_id, a.brand_id, a.unit_id, a.code, a.name,
+        $sql = $storeBranchId == 1 ?
+            "SELECT *, purchase_quantity-transaction_quantity as quantity from (SELECT a.id, a.product_category_id, a.brand_id, a.unit_id, a.code, a.name,
             b.name as product_category_name, c.name as brand_name, d.name as unit_name,
 
             ifnull((select sum(quantity) from purchase_details e
@@ -56,7 +57,10 @@ class Stock extends Model
             inner join units d on a.unit_id=d.id
             where a.deleted_at is null AND ($searchFilter)) as total_stock
             order by name
-            LIMIT $perPage OFFSET $offset";
+            LIMIT $perPage OFFSET $offset"
+            :
+            "";
+
         // dd($sql);
         $items = DB::select($sql);
 
