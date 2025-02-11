@@ -6,7 +6,7 @@ import {  FaPencilAlt, FaRegTrashAlt } from "react-icons/fa";
 import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
-import DistributionFIlter from "@/Components/DistributionFIlter";
+import DistributionFilter from "@/Components/DistributionFilter";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 import dateFormat from "dateformat";
 
@@ -71,7 +71,7 @@ const Index = ({ title, mutations, searchingTextProps,startDate, endDate, isRece
     }, [flash]);
     return (
         <AdminLayout title={title}>
-            <DistributionFIlter filters={filters} setFilters={setFilters} handleFilterButton={ handleFilterButton} />
+            <DistributionFilter filters={filters} setFilters={setFilters} handleFilterButton={ handleFilterButton} />
             
             <div  className="flex items-center ml-1">
                 <MdOutlineAddCircleOutline
