@@ -17,7 +17,7 @@ class StockController extends Controller
         $searchingText ??= "";
         $page = Request()->input('page', 1);
 
-        $stocks = Stock::getStock($searchingText, $perPage, $page);
+        $stocks = Stock::getStock($searchingText, session('selectedStoreBranchId'), $perPage, $page);
         $selectedProductId = Request()->input('selectedProductId', $stocks && sizeOf($stocks->items()) > 0 ? $stocks->items()[0]->id : '');
 
         $selectedStock = Stock::getStockInfo($selectedProductId);
