@@ -13,9 +13,8 @@ class Stock extends Model
     use HasFactory;
     use Notifiable;
 
-    public static function getStock($searchingText, $perPage, $page, $storeBranchId = 1)
+    public static function getStock($searchingText, $storeBranchId = 1, $perPage = 10, $page = 1)
     {
-
         $searchingText = trim($searchingText);
         $searchConditions = [];
 
@@ -52,7 +51,7 @@ class Stock extends Model
             -- 🔥 Perhitungan quantity berdasarkan storeBranchId
             CASE 
                 WHEN $storeBranchId = 1 
-                    THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0)
+                    THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0)
                 ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
             END AS quantity,
 
@@ -341,5 +340,19 @@ ORDER BY
         ];
     }
 
+    public static function checkSufficientStock($storeBranchId, $details)
+    {
+        $insufficientProductStock  = null;
+        foreach ($details as $detail) {
+            if (self::getStock($detail->product->code, $storeBranchId)->items()[0]->quantity - $detail->quantity <= 0) {
+                $insufficientProductStock = $detail->product;
+                break;
+            }
+        }
+        if ($insufficientProductStock) {
+            return "Product {$insufficientProductStock->name}({$insufficientProductStock->code}) tidak cukup!!";
+        }
 
+        return "";
+    }
 }

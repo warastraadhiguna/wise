@@ -109,7 +109,7 @@ class MutationController extends Controller
 
         $products = null;
         if (!$mutationDetail) {
-            $products = $searchingText ? Stock::getStock($searchingText, $perPage, $page) : null;
+            $products = $searchingText ? Stock::getStock($searchingText, session('selectedStoreBranchId'), $perPage, $page) : null;
             if ($products && $products->total() == 1 &&  $addDetail) {
                 $detail = $mutation->mutationDetails->firstWhere('product_id', $products[0]->id);
 
@@ -153,9 +153,14 @@ class MutationController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $mutation = Mutation::withTrashed()->findOrFail($id);
+        $mutation = Mutation::withTrashed()->with('mutationDetails', 'mutationDetails.product')->findOrFail($id);
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
+            $errorMessage = Stock::checkSufficientStock($mutation->store_branch_id, $mutation->mutationDetails);
+            if ($errorMessage) {
+                return redirect()->to("mutation/$mutation->id/edit")->with("error", $errorMessage);
+            }
+
             $data['approved_user_id'] = $request->user()->id;
             $data['approve_date'] =  Carbon::now();
 

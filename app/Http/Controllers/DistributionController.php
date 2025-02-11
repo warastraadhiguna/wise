@@ -90,6 +90,12 @@ class DistributionController extends Controller
         }, 'distributionDetails.product', 'user', 'approvedUser'])
             ->find($id);
 
+
+        if (session('selectedStoreBranchId') <> 1) {
+            return redirect()->to("dashboard")->with("error", 'Distribution hanya bisa diedit oleh toko utama!!');
+        }
+
+
         if (!$distribution->number) {
             $distribution->update([
                 'user_id' => $request->user()->id,
@@ -107,7 +113,7 @@ class DistributionController extends Controller
 
         $products = null;
         if (!$distributionDetail) {
-            $products = $searchingText ? Stock::getStock($searchingText, $perPage, $page) : null;
+            $products = $searchingText ? Stock::getStock($searchingText, 1, $perPage, $page) : null;
             if ($products && $products->total() == 1 &&  $addDetail) {
                 $detail = $distribution->distributionDetails->firstWhere('product_id', $products[0]->id);
 
@@ -152,9 +158,14 @@ class DistributionController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $distribution = Distribution::withTrashed()->findOrFail($id);
+        $distribution = Distribution::withTrashed()->with('distributionDetails', 'distributionDetails.product')->findOrFail($id);
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
+            $errorMessage = Stock::checkSufficientStock(1, $distribution->distributionDetails);
+            if ($errorMessage) {
+                return redirect()->to("distribution/$distribution->id/edit")->with("error", $errorMessage);
+            }
+
             $data['approved_user_id'] = $request->user()->id;
             $data['approve_date'] =  Carbon::now();
 

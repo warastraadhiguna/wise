@@ -168,7 +168,7 @@ class TransactionController extends Controller
 
         $products = null;
         if (!$transactionDetail) {
-            $products = $searchingText ? Stock::getStock($searchingText, $perPage, $page, $transaction->store_branch_id) : null;
+            $products = $searchingText ? Stock::getStock($searchingText, $transaction->store_branch_id, $perPage, $page) : null;
             if ($products && $products->total() == 1 &&  $addDetail) {
                 $detail = $transaction->transactionDetails->firstWhere('product_id', $products[0]->id);
 
@@ -211,9 +211,14 @@ class TransactionController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $transaction = Transaction::withTrashed()->findOrFail($id);
+        $transaction = Transaction::withTrashed()->with('transactionDetails', 'transactionDetails.product')->findOrFail($id);
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
+            $errorMessage = Stock::checkSufficientStock($transaction->store_branch_id, $transaction->transactionDetails);
+            if ($errorMessage) {
+                return redirect()->to("transaction/$transaction->id/edit")->with("error", $errorMessage);
+            }
+
             $paymentStatus = PaymentStatus::find(Request()->input("payment_status_id"));
 
             $request->merge([

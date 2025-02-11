@@ -76,7 +76,7 @@ class OrderController extends Controller
             }, 'orderUser', 'approvedOrderUser'])
             ->find($id);
 
-        $products = $searchingText ? Stock::getStock($searchingText, $perPage, $page, $order->store_branch_id) : null;
+        $products = $searchingText ? Stock::getStock($searchingText, $order->store_branch_id, $perPage, $page) : null;
         if ($products && $products->total() == 1 &&  $addDetail) {
             $detail = $order->purchaseDetails->firstWhere('product_id', $products[0]->id);
 

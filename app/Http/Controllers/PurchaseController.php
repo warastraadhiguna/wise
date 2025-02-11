@@ -162,7 +162,7 @@ class PurchaseController extends Controller
 
         $products = null;
         if (!$purchaseDetail) {
-            $products = $searchingText ? Stock::getStock($searchingText, $perPage, $page, $purchase->store_branch_id) : null;
+            $products = $searchingText ? Stock::getStock($searchingText, $purchase->store_branch_id, $perPage, $page) : null;
             if ($products && $products->total() == 1 &&  $addDetail) {
                 $detail = $purchase->purchaseDetails->firstWhere('product_id', $products[0]->id);
 
