@@ -2,7 +2,7 @@ import NoMovePageSearchingTable from "@/Components/NoMovePageSearchingTable";
 import React from "react";
 import { useState } from "react";
 
-const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessing, distributionDetails }) => {
+const Form = ({ setShowForm, dataProps, setDataProps, action,mutation, isProcessing, mutationDetails }) => {
     const handleChange = (event) => {
         setDataProps((prevData) => ({
             ...prevData,
@@ -28,11 +28,11 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
                                     htmlFor="grid-name"
                                 >
-                                    Distribution Number
+                                    Mutation Number
                                 </label>
                                 <input
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                    id="grid-distribution-number"
+                                    id="grid-mutation-number"
                                     name="number"
                                     value={dataProps.number}
                                     type="text"
@@ -42,29 +42,29 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                             <div className="w-full md:w-1/3 px-3 mb-6 md:mb-0">
                                 <label
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
-                                    htmlFor="grid-distribution-date"
+                                    htmlFor="grid-mutation-date"
                                 >
-                                    Distribution Date 
+                                    Mutation Date 
                                 </label>
                                 <input
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                    id="grid-distribution-date"
+                                    id="grid-mutation-date"
                                     type="date"
-                                    name="distribution_date"
-                                    value={dataProps.distribution_date }
+                                    name="mutation_date"
+                                    value={dataProps.mutation_date }
                                     disabled={true}
                                 />                        
                             </div>             
                             <div className="w-full md:w-1/3 px-3">
                                 <label
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
-                                    htmlFor="grid-distribution-note"
+                                    htmlFor="grid-mutation-note"
                                 >
                                     Note
                                 </label>
                                 <textarea
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                    id="grid-distribution-note"
+                                    id="grid-mutation-note"
                                     name="note"
                                     value={dataProps.note ?? ""}
                                     disabled={true} />                               
@@ -77,7 +77,7 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                                     name="is_received"
                                     value={dataProps.is_received}
                                     onChange={handleChange}
-                                    disabled={distribution.is_received}
+                                    disabled={mutation.is_received}
                                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 >
                                     <option value="1">Receive</option>
@@ -87,22 +87,23 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                             <div className="w-full md:w-1/3 px-3">
                                 <label
                                     className="block uppercase tracking-wide text-black text-xs font-bold mb-2"
-                                    htmlFor="grid-distribution-note"
+                                    htmlFor="grid-mutation-note"
                                 >
                                     Receiption Note
                                 </label>
                                 <textarea
                                     className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                    id="grid-distribution-reception-note"
+                                    id="grid-mutation-reception-note"
                                     name="receiption_note"
                                     onChange={handleChange}    
-                                    disabled={distribution.is_received}
+                                    disabled={mutation.is_received}
                                     value={dataProps.receiption_note ?? ""}/>                               
                             </div>                            
                         </div>
                         <div className="mt-4 mb-4 flex justify-end">
-                            {distribution.is_received != 1 &&  <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-4" type="submit" disabled={isProcessing}>
-                            Save</button>}
+                            {mutation.is_received != 1 &&  <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-4" type="submit" disabled={isProcessing}>
+                                Save</button>}
+
                             <button
                                 onClick={() => setShowForm(false)}
                                 className="bg-red-500 text-white font-bold py-1 px-2 rounded"
@@ -132,9 +133,9 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                                 </tr>
                             </thead>
                             <tbody>
-                                {distributionDetails
-                                    .filter(distributionDetail => distributionDetail.product.name.toLowerCase().includes(searchingText.toLowerCase())) 
-                                    .map((distributionDetail, i) => (
+                                {mutationDetails
+                                    .filter(mutationDetail => mutationDetail.product.name.toLowerCase().includes(searchingText.toLowerCase())) 
+                                    .map((mutationDetail, i) => (
                                     <tr
                                         key={i}
                                         className={`bg-white border-b dark:bg-gray-800 dark:border-gray-700`}
@@ -145,11 +146,11 @@ const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessi
                                         >
                                             {i + 1}
                                         </td>
-                                        <td className="px-6 py-4">{distributionDetail.product ? distributionDetail.product.name : ""}{distributionDetail.product ? " (" + distributionDetail.product.code + ")" : ""}</td>
+                                        <td className="px-6 py-4">{mutationDetail.product ? mutationDetail.product.name : ""}{mutationDetail.product ? " (" + mutationDetail.product.code + ")" : ""}</td>
                                         <td className="px-6 py-4 cursor-pointer">
-                                            {Number(distributionDetail.quantity).toLocaleString()}
+                                            {Number(mutationDetail.quantity).toLocaleString()}
                                         </td>
-                                        <td className="px-6 py-4">{distributionDetail.product ? distributionDetail.product.unit.name : ""}</td>                                                 
+                                        <td className="px-6 py-4">{mutationDetail.product ? mutationDetail.product.unit.name : ""}</td>                                                 
                                     </tr>
                                     ))}
                             </tbody>

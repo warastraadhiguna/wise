@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\DistributionDetailController;
 use App\Http\Controllers\DistributionReceiptController;
+use App\Http\Controllers\MutationController;
+use App\Http\Controllers\MutationDetailController;
+use App\Http\Controllers\MutationReceiptController;
 use App\Models\StoreBranch;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
@@ -88,6 +91,13 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('distribution-receipt', DistributionReceiptController::class);
 
     Route::resource('distribution-detail', DistributionDetailController::class);
+
+    Route::resource('mutation-receipt', MutationReceiptController::class);
+
+    Route::resource('mutation-detail', MutationDetailController::class);
+
+    Route::resource('mutation', MutationController::class);
+
     Route::resource('purchase-detail-return', PurchaseDetailReturnController::class);
     Route::resource('transaction-detail-return', TransactionDetailReturnController::class);
     Route::resource('product-price-relation', ProductPriceRelationController::class);

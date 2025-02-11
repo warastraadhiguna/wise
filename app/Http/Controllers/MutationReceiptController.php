@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
-use App\Models\Distribution;
+use App\Models\Mutation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
 
-class DistributionReceiptController extends Controller
+class MutationReceiptController extends Controller
 {
     public function index()
     {
@@ -24,18 +24,17 @@ class DistributionReceiptController extends Controller
         $isReceived = Request()->input("isReceived") ?? "";
 
         $data = [
-            'title' => 'Distribution Receipt List',
-            'distributions' => Distribution::withTrashed()
-            ->with('storeBranch', 'user', 'approvedUser', 'receivedUser', 'distributionDetails', 'distributionDetails.product', 'distributionDetails.product.unit')
-            ->whereBetween('distribution_date', [$startDate, $endDate])
+            'title' => 'Mutation Receipt List',
+            'mutations' => Mutation::withTrashed()
+            ->with('storeBranch', 'user', 'approvedUser', 'receivedUser', 'mutationDetails', 'mutationDetails.product', 'mutationDetails.product.unit')
+            ->whereBetween('mutation_date', [$startDate, $endDate])
             ->when($isReceived != "", function ($query) use ($isReceived) {
                 return $query->where('is_received', $isReceived);
             })
             ->whereNotNull('approve_date')
-            ->where('store_branch_id', session('selectedStoreBranchId'))
-            ->orderByRaw('CASE WHEN distributions.approve_date IS NULL THEN 0 ELSE 1 END asc')
-            ->orderBy('distributions.distribution_date', 'desc')
-            ->orderBy('distributions.deleted_at')
+            ->orderByRaw('CASE WHEN mutations.approve_date IS NULL THEN 0 ELSE 1 END asc')
+            ->orderBy('mutations.mutation_date', 'desc')
+            ->orderBy('mutations.deleted_at')
             ->paginate($perPage)
             ->appends([
                 'perPage' => $perPage,
@@ -52,12 +51,12 @@ class DistributionReceiptController extends Controller
             'isReceived' =>  $isReceived
         ];
 
-        return Inertia::render("DistributionReceipt/Index", $data);
+        return Inertia::render("MutationReceipt/Index", $data);
     }
 
     public function update(Request $request, string $id)
     {
-        $distribution = Distribution::findOrFail($id);
+        $mutation = Mutation::findOrFail($id);
 
         $data = $request->validate(
             [
@@ -73,7 +72,7 @@ class DistributionReceiptController extends Controller
             $data['received_user_id'] = $request->user()->id;
             $data['receiption_date'] =  Carbon::now();
 
-            $distribution->update($data);
+            $mutation->update($data);
 
             DB::commit();
 

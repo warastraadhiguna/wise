@@ -4,22 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\StoreBranch;
 use Inertia\Inertia;
-use App\Models\Distribution;
-use App\Models\DistributionDetail;
+use App\Models\Mutation;
+use App\Models\MutationDetail;
 use Illuminate\Http\Request;
 use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
 
-class DistributionController extends Controller
+class MutationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        session()->put('previousUrlDistribution', request()->fullUrl());
+        session()->put('previousUrlMutation', request()->fullUrl());
         $perPage = Request()->input("perPage");
         $perPage ??= 10;
 
@@ -31,19 +31,20 @@ class DistributionController extends Controller
         $isReceived = Request()->input("isReceived") ?? "";
 
         $data = [
-            'title' => 'Distribution List',
-            'distributions' => Distribution::withTrashed()
+            'title' => 'Mutation List',
+            'mutations' => Mutation::withTrashed()
             ->with('storeBranch', 'user', 'approvedUser', 'receivedUser')
-            ->whereBetween('distribution_date', [$startDate, $endDate])
+            ->whereBetween('mutation_date', [$startDate, $endDate])
             ->when($isReceived != "", function ($query) use ($isReceived) {
                 return $query->where('is_received', $isReceived);
             })
             ->when(!empty($status), function ($query) use ($status) {
                 return $status == "approved" ? $query->whereNotNull('approve_date') : $query->whereNull('approve_date');
             })
-            ->orderByRaw('CASE WHEN distributions.approve_date IS NULL THEN 0 ELSE 1 END asc')
-            ->orderBy('distributions.distribution_date', 'desc')
-            ->orderBy('distributions.deleted_at')
+            ->where('store_branch_id', session('selectedStoreBranchId'))
+            ->orderByRaw('CASE WHEN mutations.approve_date IS NULL THEN 0 ELSE 1 END asc')
+            ->orderBy('mutations.mutation_date', 'desc')
+            ->orderBy('mutations.deleted_at')
             ->paginate($perPage)
             ->appends([
                 'perPage' => $perPage,
@@ -60,7 +61,7 @@ class DistributionController extends Controller
             'isReceived' =>  $isReceived
         ];
 
-        return Inertia::render("Distribution/Index", $data);
+        return Inertia::render("Mutation/Index", $data);
     }
 
     /**
@@ -68,13 +69,14 @@ class DistributionController extends Controller
      */
     public function create(Request $request)
     {
-        $newDistribution = Distribution::create([
+        $newMutation = Mutation::create([
             'user_id' => $request->user()->id,
-            'number'  =>  $this->generateDistributionNumber(),
-            'distribution_date' => Carbon::now(),
+            'number'  =>  $this->generateMutationNumber(),
+            'mutation_date' => Carbon::now(),
+            'store_branch_id' => session('selectedStoreBranchId')
         ]);
 
-        return redirect()->route('distribution.edit', $newDistribution->id);
+        return redirect()->route('mutation.edit', $newMutation->id);
     }
 
     public function edit(string $id, Request $request)
@@ -85,31 +87,31 @@ class DistributionController extends Controller
         $perPage = Request()->input("perPage", 10);
         $page = Request()->input('page', 1);
 
-        $distribution = Distribution::with(['distributionDetails' => function ($query) {
+        $mutation = Mutation::with(['mutationDetails' => function ($query) {
             $query->orderBy('updated_at', 'desc');
-        }, 'distributionDetails.product', 'user', 'approvedUser'])
+        }, 'mutationDetails.product', 'user', 'approvedUser'])
             ->find($id);
 
-        if (!$distribution->number) {
-            $distribution->update([
+        if (!$mutation->number) {
+            $mutation->update([
                 'user_id' => $request->user()->id,
-                'number'  => $this->generateDistributionNumber(),
-                'distribution_date' => Carbon::now(),
+                'number'  => $this->generateMutationNumber(),
+                'mutation_date' => Carbon::now(),
                 'payment_status_id' => 1,
             ]);
         }
 
-        $distributionDetail = $distribution->distributionDetails->firstWhere(function ($distributionDetail) use ($searchingText) {
-            return $distributionDetail->product &&
-                $distributionDetail->product->code === $searchingText &&
-                is_null($distributionDetail->quantity);
+        $mutationDetail = $mutation->mutationDetails->firstWhere(function ($mutationDetail) use ($searchingText) {
+            return $mutationDetail->product &&
+                $mutationDetail->product->code === $searchingText &&
+                is_null($mutationDetail->quantity);
         });
 
         $products = null;
-        if (!$distributionDetail) {
+        if (!$mutationDetail) {
             $products = $searchingText ? Stock::getStock($searchingText, $perPage, $page) : null;
             if ($products && $products->total() == 1 &&  $addDetail) {
-                $detail = $distribution->distributionDetails->firstWhere('product_id', $products[0]->id);
+                $detail = $mutation->mutationDetails->firstWhere('product_id', $products[0]->id);
 
                 if ($detail) {
                     $detail->quantity += 1;
@@ -118,33 +120,32 @@ class DistributionController extends Controller
                     $this->addDetail($request, $id, $products[0]->id, $products[0]->price);
                 }
 
-                return redirect()->to("distribution/$id/edit");
-            } elseif ($multiplier && $distribution->distributionDetails) {
-                $detail = $distribution->distributionDetails[0];
+                return redirect()->to("mutation/$id/edit");
+            } elseif ($multiplier && $mutation->mutationDetails) {
+                $detail = $mutation->mutationDetails[0];
                 $detail->quantity *= intval($multiplier);
 
                 $detail->save();
             } elseif ($products && $products->total() == 0) {
-                return redirect()->to("distribution/$id/edit")->with("error", "Product tidak ditemukan");
+                return redirect()->to("mutation/$id/edit")->with("error", "Product tidak ditemukan");
             }
         } else {
-            $distributionDetail->quantity = $distributionDetail->order_quantity;
-            $distributionDetail->price ??= 0;
-            $distributionDetail->discount_percent = 0;
-            $distributionDetail->discount = 0;
-            $distributionDetail->save();
+            $mutationDetail->quantity = $mutationDetail->order_quantity;
+            $mutationDetail->price ??= 0;
+            $mutationDetail->discount_percent = 0;
+            $mutationDetail->discount = 0;
+            $mutationDetail->save();
         }
 
         $data = [
-            'title' => 'Edit Distribution',
-            'distribution' => $distribution,
-            'distributionDetails' => DistributionDetail::with('product', 'product.unit')->where('distribution_id', '=', $id)->orderBy('created_at', 'desc')->get(),
-            'previousUrl' => session()->has('previousUrlDistribution') ? session('previousUrlDistribution') : "/distribution",
-            'storeBranchs' => StoreBranch::where("id", "!=", 1)->get(),
+            'title' => 'Edit Mutation',
+            'mutation' => $mutation,
+            'mutationDetails' => MutationDetail::with('product', 'product.unit')->where('mutation_id', '=', $id)->orderBy('created_at', 'desc')->get(),
+            'previousUrl' => session()->has('previousUrlMutation') ? session('previousUrlMutation') : "/mutation",
             'products' => $products,
         ];
 
-        return Inertia::render("Distribution/Form", $data);
+        return Inertia::render("Mutation/Form", $data);
     }
 
     /**
@@ -152,7 +153,7 @@ class DistributionController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $distribution = Distribution::withTrashed()->findOrFail($id);
+        $mutation = Mutation::withTrashed()->findOrFail($id);
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
             $data['approved_user_id'] = $request->user()->id;
@@ -162,36 +163,35 @@ class DistributionController extends Controller
 
                 DB::beginTransaction();
 
-                $distribution->update($data);
+                $mutation->update($data);
 
                 DB::commit();
 
-                return redirect()->to("distribution/$distribution->id/edit")->with("success", 'Data berhasil diapprove.');
+                return redirect()->to("mutation/$mutation->id/edit")->with("success", 'Data berhasil diapprove.');
             } catch (Exception $e) {
                 DB::rollback();
-                return redirect()->to("distribution/$distribution->id/edit")->with("error", 'Data gagal diapprove.');
+                return redirect()->to("mutation/$mutation->id/edit")->with("error", 'Data gagal diapprove.');
             }
 
         }
 
-        if ($distribution->deleted_at) {
-            $distribution->restore();
+        if ($mutation->deleted_at) {
+            $mutation->restore();
 
             return back()->with("success", 'Data berhasil dipulihkan');
         }
 
         $data = $request->validate(
             [
-                'store_branch_id' => 'required',
                 'number'  => 'required',
-                'distribution_date' => 'required',
+                'mutation_date' => 'required',
                 'note' => 'nullable',
             ]
         );
 
         $data['user_id'] = $request->user()->id;
 
-        $distribution->update($data);
+        $mutation->update($data);
 
         return back()->with("success", 'Data berhasil diubah');
     }
@@ -201,44 +201,44 @@ class DistributionController extends Controller
      */
     public function destroy(string $id)
     {
-        $distribution = Distribution::withTrashed()->findOrFail($id);
-        $deletedAt = $distribution->deleted_at;
-        if ($distribution->deleted_at) {
-            $distribution->forceDelete();
+        $mutation = Mutation::withTrashed()->findOrFail($id);
+        $deletedAt = $mutation->deleted_at;
+        if ($mutation->deleted_at) {
+            $mutation->forceDelete();
         } else {
-            $distribution->delete();
+            $mutation->delete();
         }
 
         return back()->with("success", 'Data berhasil dihapus' . ($deletedAt ? " SELAMANYA" : ""));
     }
 
-    private function generateDistributionNumber()
+    private function generateMutationNumber()
     {
         $year = Carbon::now()->format('Y');
         $month = Carbon::now()->format('m');
 
-        $lastDistribution = Distribution::whereYear('distribution_date', $year)
-                        ->whereMonth('distribution_date', $month)
+        $lastMutation = Mutation::whereYear('mutation_date', $year)
+                        ->whereMonth('mutation_date', $month)
                         ->orderBy('id', 'desc')
                         ->first();
 
-        if ($lastDistribution) {
-            $lastDistributionNumber = explode('/', $lastDistribution->number);
-            $lastDistributionSequence = (int) end($lastDistributionNumber);
-            $newDistributionSequence = $lastDistributionSequence + 1;
+        if ($lastMutation) {
+            $lastMutationNumber = explode('/', $lastMutation->number);
+            $lastMutationSequence = (int) end($lastMutationNumber);
+            $newMutationSequence = $lastMutationSequence + 1;
         } else {
-            $newDistributionSequence = 1;
+            $newMutationSequence = 1;
         }
 
-        $newDistributionNumber = 'D/' . $year . '/' . $month . '/' . $newDistributionSequence;
+        $newMutationNumber = 'D/' . $year . '/' . $month . '/' . $newMutationSequence;
 
-        return $newDistributionNumber;
+        return $newMutationNumber;
     }
 
     private function addDetail(Request $request, $id, $productsId, $price)
     {
-        DistributionDetail::create([
-            'distribution_id' => $id,
+        MutationDetail::create([
+            'mutation_id' => $id,
             'product_id' => $productsId,
             'user_id' => $request->user()->id,
             'quantity' => 1,

@@ -2,12 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\DistributionDetail;
-use App\Models\Supplier;
-use Carbon\Carbon;
-use Inertia\Inertia;
-use App\Models\Distribution;
 use Illuminate\Http\Request;
 
 class DistributionDetailController extends Controller

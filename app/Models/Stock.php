@@ -32,36 +32,98 @@ class Stock extends Model
 
 
         $offset = ($page - 1) * $perPage;
+        //query for return
+        // ifnull((select sum(i.quantity) from transaction_details g
+        // left join transactions h on g.transaction_id=h.id
+        // left join transaction_detail_returns i on i.transaction_detail_id=g.id
+        // where h.deleted_at is null and h.approve_transaction_date is not null
+        // and g.product_id=a.id and h.store_branch_id=$storeBranchId),0) as transaction_return_quantity,
+        $sql = "SELECT 
+            a.id, 
+            a.product_category_id, 
+            a.brand_id, 
+            a.unit_id,
+            a.code, 
+            a.name, 
+            b.name AS product_category_name, 
+            c.name AS brand_name, 
+            d.name AS unit_name,
 
-        $sql = $storeBranchId == 1 ?
-            "SELECT *, purchase_quantity-transaction_quantity as quantity from (SELECT a.id, a.product_category_id, a.brand_id, a.unit_id, a.code, a.name,
-            b.name as product_category_name, c.name as brand_name, d.name as unit_name,
+            -- 🔥 Perhitungan quantity berdasarkan storeBranchId
+            CASE 
+                WHEN $storeBranchId = 1 
+                    THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0)
+                ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
+            END AS quantity,
 
-            ifnull((select sum(quantity) from purchase_details e
-            left join purchases f on e.purchase_id=f.id
-            where f.deleted_at is null and f.approve_purchase_date is not null and a.id=e.product_id),0)  as purchase_quantity,
+            -- 🔥 Harga default
+            COALESCE((SELECT value FROM product_price_relations i WHERE i.is_default=1 AND i.product_id=a.id), 0) AS price,
 
-            ifnull((select sum(quantity) from transaction_details g
-            left join transactions h on g.transaction_id=h.id
-            where h.deleted_at is null and h.approve_transaction_date is not null and a.id=g.product_id),0) as transaction_quantity,
+            -- 🔥 Harga terakhir berdasarkan pembelian terbaru
+            COALESCE((
+                SELECT price FROM purchase_details j
+                LEFT JOIN purchases k ON j.purchase_id = k.id
+                WHERE j.product_id = a.id AND j.deleted_at IS NULL 
+                    AND k.approve_purchase_date IS NOT NULL 
+                ORDER BY k.purchase_date DESC LIMIT 1
+            ), 0) AS last_price
 
-            ifnull((SELECT value FROM product_price_relations i where i.is_default=1 and i.product_id=a.id),0) as price, 
+        FROM products a
+        LEFT JOIN product_categories b ON a.product_category_id = b.id
+        LEFT JOIN brands c ON a.brand_id = c.id
+        INNER JOIN units d ON a.unit_id = d.id
 
-            ifnull((SELECT price FROM purchase_details j
-            left join purchases k on j.purchase_id=k.id
-            where j.product_id=a.id and j.deleted_at is null and k.approve_purchase_date is not null order by k.purchase_date desc limit 1),0) as last_price
+        -- 🔥 Subquery untuk mendapatkan purchase_quantity
+        LEFT JOIN (
+            SELECT e.product_id, SUM(e.quantity) AS purchase_quantity 
+            FROM purchase_details e
+            LEFT JOIN purchases f ON e.purchase_id = f.id
+            WHERE f.deleted_at IS NULL 
+                AND f.approve_purchase_date IS NOT NULL
+            GROUP BY e.product_id
+        ) AS pq ON pq.product_id = a.id
 
-            FROM products a
-            left join product_categories b on a.product_category_id=b.id
-            left join brands c on a.brand_id=c.id
-            inner join units d on a.unit_id=d.id
-            where a.deleted_at is null AND ($searchFilter)) as total_stock
-            order by name
-            LIMIT $perPage OFFSET $offset"
-            :
-            "";
+        -- 🔥 Subquery untuk mendapatkan distribution_quantity
+        LEFT JOIN (
+            SELECT g.product_id, SUM(g.quantity) AS distribution_quantity
+            FROM distribution_details g
+            LEFT JOIN distributions h ON g.distribution_id = h.id
+            WHERE h.deleted_at IS NULL 
+                AND h.approve_date IS NOT NULL 
+                AND h.is_received = 1
+                AND ($storeBranchId != 1 OR h.store_branch_id = $storeBranchId)
+            GROUP BY g.product_id
+        ) AS dq ON dq.product_id = a.id
 
-        // dd($sql);
+        -- 🔥 Subquery untuk mendapatkan transaction_quantity
+        LEFT JOIN (
+            SELECT g.product_id, SUM(g.quantity) AS transaction_quantity
+            FROM transaction_details g
+            LEFT JOIN transactions h ON g.transaction_id = h.id
+            WHERE h.deleted_at IS NULL 
+                AND h.approve_transaction_date IS NOT NULL
+                AND h.store_branch_id = $storeBranchId
+            GROUP BY g.product_id
+        ) AS tq ON tq.product_id = a.id
+
+        -- 🔥 Subquery untuk mendapatkan mutation_quantity (hanya jika storeBranchId != 1)
+        LEFT JOIN (
+            SELECT g.product_id, SUM(g.quantity) AS mutation_quantity
+            FROM mutation_details g
+            LEFT JOIN mutations h ON g.mutation_id = h.id
+            WHERE h.deleted_at IS NULL 
+                AND h.approve_date IS NOT NULL 
+                AND h.is_received = 1
+                AND h.store_branch_id = $storeBranchId
+            GROUP BY g.product_id
+        ) AS mq ON mq.product_id = a.id
+
+        WHERE a.deleted_at IS NULL 
+        AND ($searchFilter)
+        ORDER BY name
+        LIMIT $perPage OFFSET $offset
+        ";
+
         $items = DB::select($sql);
 
         $totalSql = "SELECT COUNT(*) AS aggregate 
