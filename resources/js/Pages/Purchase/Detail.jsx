@@ -291,6 +291,7 @@ const Detail = ({ purchase, products, purchaseDetails, setShowPaymentForm, total
                                                 purchase.approve_purchase_date &&
                                                 <td className="px-6 py-4">{purchaseDetail.product ? purchaseDetail.product.unit.name : ""}</td>
                                             }
+                                            <td className="px-6 py-4">{purchaseDetail.product ? purchaseDetail.product.unit.name : ""}</td>                                            
                                             <td className="px-6 py-4 cursor-pointer">{isEditing && purchaseDetail.id == dataProps.id ?
                                             <input
                                                 className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
