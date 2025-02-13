@@ -2,7 +2,7 @@ import NoMovePageSearchingTable from "@/Components/NoMovePageSearchingTable";
 import React from "react";
 import { useState } from "react";
 
-const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessing, distributionDetails }) => {
+const Form = ({ setShowForm, dataProps, setDataProps, action, errors, isProcessing, distributionDetails, distribution}) => {
     const handleChange = (event) => {
         setDataProps((prevData) => ({
             ...prevData,
