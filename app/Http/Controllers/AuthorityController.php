@@ -57,7 +57,6 @@ class AuthorityController extends Controller
 
         Authority::create($data);
         return back()->with("success", 'Data berhasil disimpan');
-
     }
 
     public function update(Request $request, string $id)

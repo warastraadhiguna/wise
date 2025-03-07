@@ -19,4 +19,8 @@ class Authority extends Model
         'role'
     ];
 
+    public function path()
+    {
+        return $this->belongsTo(Path::class);
+    }
 }

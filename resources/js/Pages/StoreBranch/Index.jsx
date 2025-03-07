@@ -204,14 +204,15 @@ const Index = ({ title, storeBranches, searchingTextProps }) => {
                                             onClick={() => handleShowForm(storeBranch)}
                                         />   
                                         {" "} | {" "}
-                                        <FaRegTrashAlt
+                                        {storeBranch.id > 1 && (<FaRegTrashAlt
                                             size={20}
                                             color={ storeBranch.deleted_at? "#e18859" : "red"}
                                             className="cursor-pointer"
                                             onClick={() =>
                                                 handleDeleteConfirmation(storeBranch)
                                             }
-                                        />
+                                        />)}
+
                                     </div>
                                 </td>
                             </tr>

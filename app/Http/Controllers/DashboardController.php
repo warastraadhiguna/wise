@@ -22,7 +22,7 @@ class DashboardController extends Controller
 
     public function update(Request $request)
     {
-        session()->put('selectedStoreBranchId', $request->storeBranchId);
+        session()->put('selectedStoreBranchId', $request->storeBranchId ?? "1");
         return back()->with("success", 'Data berhasil diubah');
     }
 }

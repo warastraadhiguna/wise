@@ -355,4 +355,14 @@ class TransactionController extends Controller
             'discount' => 0,
         ]);
     }
+
+    public function print($id)
+    {
+        $transaction = Transaction::with(['transactionDetails','transactionDetails.product','transactionDetails.product.unit',  'storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus', 'transactionPayments', 'transactionPayments.user'])->findOrFail($id);
+        // dd($transaction->transactionPayments);
+        return Inertia::render('Transaction/Invoice', [
+            'transaction' => $transaction,
+            'details'     => $transaction->transactionDetails,
+        ]);
+    }
 }

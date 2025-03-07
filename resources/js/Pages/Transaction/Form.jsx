@@ -341,10 +341,22 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                         : "Save"}
                                 </button> :
                                 <button
-                                    className="print:hidden bg-blue-500 text-white font-bold  py-1 px-2   mr-2 rounded hover:bg-blue-700"
-                                    onClick={() => window.print()}
+                                className="print:hidden bg-blue-500 text-white font-bold py-1 px-2 mr-2 rounded hover:bg-blue-700"
+                                onClick={() => {
+                                        const printWindow = window.open(
+                                        `/transaction/${dataProps.id}/print`,
+                                        '_blank',
+                                        'width=800,height=600'
+                                        );
+                                        // Setelah halaman baru selesai dimuat, panggil print()
+                                        printWindow.onload = function () {
+                                        setTimeout(() => {
+                                            printWindow.print();
+                                        }, 500); // Delay 500ms, sesuaikan jika perlu
+                                        };
+                                    }}
                                 >
-                                    Print
+                                Print
                                 </button>
                             }
                                 <Link href={previousUrl} className="print:hidden  bg-red-500 text-white font-bold py-1 px-2 rounded hover:bg-red-700">

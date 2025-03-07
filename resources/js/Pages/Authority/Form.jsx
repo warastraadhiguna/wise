@@ -164,7 +164,7 @@ const Form = ({
                                         className="basic-multi-select"
                                         classNamePrefix="Multiple select"
                                         onChange={handleRoleChange}
-                                       defaultValue={seletedRole}                                        
+                                        defaultValue={seletedRole}                                        
                                     />
                                     {errors && errors.role && (
                                         <div className="text-red-700 text-sm mt-2">

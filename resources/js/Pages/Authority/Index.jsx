@@ -17,7 +17,7 @@ const Index = ({ title, authorities, searchingTextProps, paths }) => {
         path_id: "",
         name: "",
         method: "get,put,post,delete,",
-        role: "admin,user,", 
+        role: "admin,user,superadmin", 
     };
 
     const [showForm, setShowForm] = useState(false);

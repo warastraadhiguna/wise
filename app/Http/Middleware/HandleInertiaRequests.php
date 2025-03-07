@@ -2,10 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Authority;
+use Inertia\Middleware;
 use App\Models\UserCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -37,6 +39,22 @@ class HandleInertiaRequests extends Middleware
             return ['value' => $userCategory->name, 'label' => ucfirst($userCategory->name)];
         })->toArray();
 
+        $allowedMenus = [];
+
+        if (Auth::user()) {
+            $role = Auth::user()->role; // Misal 'admin' atau 'superadmin'
+            $pattern = '(^|, ?)' . preg_quote($role, '/') . '(,|$)';
+
+            $authorities = Authority::with('path')
+                ->where('role', 'REGEXP', $pattern)
+                ->where('method', 'like', '%get%')
+                ->get();
+
+            $allowedMenus = $authorities->pluck('path.name')
+                ->map(fn ($name) => '/' . $name)
+                ->all();
+        }
+
         return [
             ...parent::share($request),
             'appName' => config('app.name'),
@@ -48,7 +66,8 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'methods' => [['value' => 'get', 'label' => 'Read'], ['value' => 'post', 'label' => 'Create'], ['value' => 'put', 'label' => 'Update'], ['value' => 'delete', 'label' => 'Delete']],
-            'roles' => $roles
+            'roles' => $roles,
+            'allowedMenus' =>  $allowedMenus,
         ];
     }
 }
