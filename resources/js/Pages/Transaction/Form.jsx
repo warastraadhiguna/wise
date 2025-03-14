@@ -101,7 +101,7 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
         }, 0);
         setTotalSum(total);
         const grandTotal = total - transaction.discount - (total * transaction.discount_percent / 100);
-        setGrandtotal(Math.round(grandTotal + grandTotal*transaction.ppn/100));
+        setGrandtotal(Math.round(grandTotal));
     }, [transactionDetails]);
 
     return (

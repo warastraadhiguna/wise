@@ -37,93 +37,121 @@ class Stock extends Model
         // left join transaction_detail_returns i on i.transaction_detail_id=g.id
         // where h.deleted_at is null and h.approve_transaction_date is not null
         // and g.product_id=a.id and h.store_branch_id=$storeBranchId),0) as transaction_return_quantity,
+
         $sql = "SELECT 
-            a.id, 
-            a.product_category_id, 
-            a.brand_id, 
-            a.unit_id,
-            a.code, 
-            a.name, 
-            b.name AS product_category_name, 
-            c.name AS brand_name, 
-            d.name AS unit_name,
+    a.id, 
+    a.product_category_id, 
+    a.brand_id, 
+    a.unit_id,
+    a.code, 
+    a.name, 
+    b.name AS product_category_name, 
+    c.name AS brand_name, 
+    d.name AS unit_name,
 
-            -- 🔥 Perhitungan quantity berdasarkan storeBranchId
-            CASE 
-                WHEN $storeBranchId = 1 
-                    THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0)
-                ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
-            END AS quantity,
+    -- 🔥 Perhitungan quantity berdasarkan storeBranchId
+    CASE 
+        WHEN $storeBranchId = 1 
+            THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0)
+        ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
+    END AS quantity,
 
-            -- 🔥 Harga default
-            COALESCE((SELECT value FROM product_price_relations i WHERE i.is_default=1 AND i.product_id=a.id), 0) AS price,
+    -- 🔥 Harga default
+    COALESCE((SELECT value FROM product_price_relations i WHERE i.is_default=1 AND i.product_id=a.id), 0) AS price,
 
-            -- 🔥 Harga terakhir berdasarkan pembelian terbaru
-            COALESCE((
-                SELECT price FROM purchase_details j
-                LEFT JOIN purchases k ON j.purchase_id = k.id
-                WHERE j.product_id = a.id AND j.deleted_at IS NULL 
-                    AND k.approve_purchase_date IS NOT NULL 
-                ORDER BY k.purchase_date DESC LIMIT 1
-            ), 0) AS last_price
+    -- 🔥 Harga terakhir berdasarkan pembelian terbaru
+    COALESCE((
+        SELECT price FROM purchase_details j
+        LEFT JOIN purchases k ON j.purchase_id = k.id
+        WHERE j.product_id = a.id AND j.deleted_at IS NULL 
+            AND k.approve_purchase_date IS NOT NULL 
+        ORDER BY k.purchase_date DESC LIMIT 1
+    ), 0) AS last_price
 
-        FROM products a
-        LEFT JOIN product_categories b ON a.product_category_id = b.id
-        LEFT JOIN brands c ON a.brand_id = c.id
-        INNER JOIN units d ON a.unit_id = d.id
+FROM products a
+LEFT JOIN product_categories b ON a.product_category_id = b.id
+LEFT JOIN brands c ON a.brand_id = c.id
+INNER JOIN units d ON a.unit_id = d.id
 
-        -- 🔥 Subquery untuk mendapatkan purchase_quantity
-        LEFT JOIN (
-            SELECT e.product_id, SUM(e.quantity) AS purchase_quantity 
-            FROM purchase_details e
-            LEFT JOIN purchases f ON e.purchase_id = f.id
-            WHERE f.deleted_at IS NULL 
-                AND f.approve_purchase_date IS NOT NULL
-            GROUP BY e.product_id
-        ) AS pq ON pq.product_id = a.id
+-- 🔥 Subquery untuk mendapatkan purchase_quantity
+LEFT JOIN (
+    SELECT e.product_id, SUM(e.quantity) AS purchase_quantity 
+    FROM purchase_details e
+    LEFT JOIN purchases f ON e.purchase_id = f.id
+    WHERE f.deleted_at IS NULL 
+        AND f.approve_purchase_date IS NOT NULL
+    GROUP BY e.product_id
+) AS pq ON pq.product_id = a.id
 
-        -- 🔥 Subquery untuk mendapatkan distribution_quantity
-        LEFT JOIN (
-            SELECT g.product_id, SUM(g.quantity) AS distribution_quantity
-            FROM distribution_details g
-            LEFT JOIN distributions h ON g.distribution_id = h.id
-            WHERE h.deleted_at IS NULL 
-                AND h.approve_date IS NOT NULL 
-                AND h.is_received = 1
-                AND ($storeBranchId != 1 OR h.store_branch_id = $storeBranchId)
-            GROUP BY g.product_id
-        ) AS dq ON dq.product_id = a.id
+-- 🔥 Subquery untuk mendapatkan distribution_quantity
+LEFT JOIN (
+    SELECT g.product_id, SUM(g.quantity) AS distribution_quantity
+    FROM distribution_details g
+    LEFT JOIN distributions h ON g.distribution_id = h.id
+    WHERE h.deleted_at IS NULL 
+        AND h.approve_date IS NOT NULL 
+        AND h.is_received = 1
+        AND ($storeBranchId != 1 OR h.store_branch_id = $storeBranchId)
+    GROUP BY g.product_id
+) AS dq ON dq.product_id = a.id
 
-        -- 🔥 Subquery untuk mendapatkan transaction_quantity
-        LEFT JOIN (
-            SELECT g.product_id, SUM(g.quantity) AS transaction_quantity
-            FROM transaction_details g
-            LEFT JOIN transactions h ON g.transaction_id = h.id
-            WHERE h.deleted_at IS NULL 
-                AND h.approve_transaction_date IS NOT NULL
-                AND h.store_branch_id = $storeBranchId
-            GROUP BY g.product_id
-        ) AS tq ON tq.product_id = a.id
+-- 🔥 Subquery untuk mendapatkan transaction_quantity
+LEFT JOIN (
+    SELECT g.product_id, SUM(g.quantity) AS transaction_quantity
+    FROM transaction_details g
+    LEFT JOIN transactions h ON g.transaction_id = h.id
+    WHERE h.deleted_at IS NULL 
+        AND h.approve_transaction_date IS NOT NULL
+        AND h.store_branch_id = $storeBranchId
+    GROUP BY g.product_id
+) AS tq ON tq.product_id = a.id
 
-        -- 🔥 Subquery untuk mendapatkan mutation_quantity (hanya jika storeBranchId != 1)
-        LEFT JOIN (
-            SELECT g.product_id, SUM(g.quantity) AS mutation_quantity
-            FROM mutation_details g
-            LEFT JOIN mutations h ON g.mutation_id = h.id
-            WHERE h.deleted_at IS NULL 
-                AND h.approve_date IS NOT NULL 
-                AND h.is_received = 1
-                AND h.store_branch_id = $storeBranchId
-            GROUP BY g.product_id
-        ) AS mq ON mq.product_id = a.id
+-- 🔥 Subquery untuk mendapatkan mutation_quantity (hanya jika storeBranchId != 1)
+LEFT JOIN (
+    SELECT g.product_id, SUM(g.quantity) AS mutation_quantity
+    FROM mutation_details g
+    LEFT JOIN mutations h ON g.mutation_id = h.id
+    WHERE h.deleted_at IS NULL 
+        AND h.approve_date IS NOT NULL 
+        AND h.is_received = 1
+        AND h.store_branch_id = $storeBranchId
+    GROUP BY g.product_id
+) AS mq ON mq.product_id = a.id
 
-        WHERE a.deleted_at IS NULL 
-        AND ($searchFilter)
-        ORDER BY name
-        LIMIT $perPage OFFSET $offset
-        ";
+WHERE a.deleted_at IS NULL 
+  AND ($searchFilter)
+ORDER BY a.name
+LIMIT $perPage OFFSET $offset
+";
 
-        $items = DB::select($sql);
+        // Konversi hasil query menjadi collection agar bisa digunakan method Collection
+        $items = collect(DB::select($sql));
+
+        // Ambil semua kategori harga
+        $priceCategories = PriceCategory::get();
+
+        // Ambil semua id produk dari $items
+        $stockIds = $items->pluck('id')->toArray();
+
+        // Ambil semua ProductPriceRelation untuk produk-produk tersebut dalam satu query, kemudian group by product_id
+        $productPriceRelations = ProductPriceRelation::whereIn('product_id', $stockIds)->get()->groupBy('product_id');
+
+        // Map setiap stock dan tambahkan field baru untuk setiap kategori harga
+        $items = $items->map(function ($item) use ($priceCategories, $productPriceRelations) {
+            // Dapatkan relasi harga untuk produk ini (jika ada)
+            $relations = $productPriceRelations->get($item->id, collect());
+
+            foreach ($priceCategories as $priceCategory) {
+                // Cari relasi untuk kategori harga tertentu
+                $relation = $relations->firstWhere('price_category_id', $priceCategory->id);
+                // Tetapkan nilai, jika tidak ada, gunakan 0
+                $item->{"priceCategory_{$priceCategory->id}"} = $relation ? $relation->value : 0;
+            }
+            return $item;
+        });
+
+
+        ///////////////////////////////
 
         $totalSql = "SELECT COUNT(*) AS aggregate 
             FROM products a
@@ -203,120 +231,107 @@ class Stock extends Model
         }
 
         $query = "SELECT
-    a.id, a.code, a.name,
-    d.name AS unit_name,
-    IFNULL(SUM(pi.quantity), NULL) AS quantity,
-    IFNULL(SUM(pi.adjusted_price * pi.quantity) / NULLIF(SUM(pi.quantity), 0), NULL) AS average_price,
-    (
-        SELECT 
-            subquery.adjusted_price
-        FROM 
+            a.id, a.code, a.name,
+            d.name AS unit_name,
+            IFNULL(SUM(pi.quantity), NULL) AS quantity,
+            IFNULL(SUM(pi.adjusted_price * pi.quantity) / NULLIF(SUM(pi.quantity), 0), NULL) AS average_price,
             (
                 SELECT 
-                    pd.product_id,
-                    pd.quantity,
-                    (
-                        ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
-                        (1 - IFNULL(p.discount_percent, 0) / 100) -
-                        (
-                            IFNULL(p.discount, 0) * 
-                            (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
-                                NULLIF(
-                                    (
-                                        SELECT 
-                                            SUM(
-                                                (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
-                                            )
-                                        FROM 
-                                            purchase_details pd_sub
-                                        WHERE 
-                                            pd_sub.purchase_id = p.id
-                                            AND pd_sub.deleted_at IS NULL
-                                    ),
-                                    0
-                                )
-                            )
-                        ) *
-                        (1 + IFNULL(p.ppn, 0) / 100)
-                    ) AS adjusted_price,
-                    p.purchase_date
+                    subquery.adjusted_price
                 FROM 
-                    purchase_details pd
-                INNER JOIN purchases p 
-                    ON pd.purchase_id = p.id
+                    (
+                        SELECT 
+                            pd.product_id,
+                            pd.quantity,
+                            (
+                                ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
+                                (1 - IFNULL(p.discount_percent, 0) / 100) -
+                                (
+                                    IFNULL(p.discount, 0) * 
+                                    (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
+                                        NULLIF(
+                                            (
+                                                SELECT 
+                                                    SUM(
+                                                        (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
+                                                    )
+                                                FROM 
+                                                    purchase_details pd_sub
+                                                WHERE 
+                                                    pd_sub.purchase_id = p.id
+                                                    AND pd_sub.deleted_at IS NULL
+                                            ),
+                                            0
+                                        )
+                                    )
+                                ) *
+                                (1 + IFNULL(p.ppn, 0) / 100)
+                            ) AS adjusted_price,
+                            p.purchase_date
+                        FROM 
+                            purchase_details pd
+                        INNER JOIN purchases p 
+                            ON pd.purchase_id = p.id
+                        WHERE 
+                            pd.deleted_at IS NULL
+                            AND p.deleted_at IS NULL
+                            AND p.approve_purchase_date IS NOT NULL
+                    ) AS subquery
                 WHERE 
-                    pd.deleted_at IS NULL
-                    AND p.deleted_at IS NULL
-                    AND p.approve_purchase_date IS NOT NULL
-            ) AS subquery
-        WHERE 
-            subquery.product_id = a.id
-        ORDER BY 
-            subquery.purchase_date DESC
-        LIMIT 1
-    ) AS last_price
-FROM
-    products a
-LEFT JOIN (
-    SELECT 
-        pd.product_id,
-        pd.quantity,
-        (
-            ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
-            (1 - IFNULL(p.discount_percent, 0) / 100) -
-            (
-                IFNULL(p.discount, 0) * 
-                (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
-                    NULLIF(
-                        (
-                            SELECT 
-                                SUM(
-                                    (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
-                                )
-                            FROM 
-                                purchase_details pd_sub
-                            WHERE 
-                                pd_sub.purchase_id = p.id
-                                AND pd_sub.deleted_at IS NULL
-                        ),
-                        0
-                    )
-                )
-            ) *
-            (1 + IFNULL(p.ppn, 0) / 100)
-        ) AS adjusted_price
-    FROM 
-        purchase_details pd
-    INNER JOIN purchases p 
-        ON pd.purchase_id = p.id
-    WHERE
-        pd.deleted_at IS NULL
-        AND p.deleted_at IS NULL
-        AND p.approve_purchase_date IS NOT NULL
-) pi
-    ON pi.product_id = a.id
-INNER JOIN units d
-    ON a.unit_id = d.id
-WHERE
-    a.id = $productId
-GROUP BY
-    a.id, d.name, a.code, a.name
-ORDER BY
-    a.id;";
-        // dd($query);
+                    subquery.product_id = a.id
+                ORDER BY 
+                    subquery.purchase_date DESC
+                LIMIT 1
+            ) AS last_price
+        FROM
+            products a
+        LEFT JOIN (
+            SELECT 
+                pd.product_id,
+                pd.quantity,
+                (
+                    ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
+                    (1 - IFNULL(p.discount_percent, 0) / 100) -
+                    (
+                        IFNULL(p.discount, 0) * 
+                        (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
+                            NULLIF(
+                                (
+                                    SELECT 
+                                        SUM(
+                                            (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
+                                        )
+                                    FROM 
+                                        purchase_details pd_sub
+                                    WHERE 
+                                        pd_sub.purchase_id = p.id
+                                        AND pd_sub.deleted_at IS NULL
+                                ),
+                                0
+                            )
+                        )
+                    ) *
+                    (1 + IFNULL(p.ppn, 0) / 100)
+                ) AS adjusted_price
+            FROM 
+                purchase_details pd
+            INNER JOIN purchases p 
+                ON pd.purchase_id = p.id
+            WHERE
+                pd.deleted_at IS NULL
+                AND p.deleted_at IS NULL
+                AND p.approve_purchase_date IS NOT NULL
+        ) pi
+            ON pi.product_id = a.id
+        INNER JOIN units d
+            ON a.unit_id = d.id
+        WHERE
+            a.id = $productId
+        GROUP BY
+            a.id, d.name, a.code, a.name
+        ORDER BY
+            a.id;";
         $stocks = DB::select($query);
-        // sum(a.quantity*a.price)/sum(a.quantity) as averagePrice
-        // $averagePrice = 0;
-        // $totalValue = 0;
-        // $quantityTotal = 0;
-        // foreach ($stocks as $stock) {
-        //     $quantityTotal += $stock->quantity;
-        //     $totalValue  += $stock->quantity * $stock->price;
-        // }
-
-        // if ($totalValue > 0 && $quantityTotal > 0) {
-        //     $averagePrice = $totalValue / $quantityTotal;
-        // }
 
         $query = "SELECT b.id, ifNull(b.product_id,$productId) as product_id, a.id as price_category_id, a.name, ifNull(b.value, 0) as value, ifNull(b.is_default,0) as is_default FROM price_categories a left join product_price_relations b on a.id=b.price_category_id and product_id=$productId order by a.index ";
 
@@ -333,7 +348,7 @@ ORDER BY
                 $prices[0]->is_default = "1";
             }
         }
-        // dd(sizeOf($stocks));
+
         return [
             "lastInfo" => $stocks && sizeOf($stocks) > 0 ? $stocks[0] : null,
             "prices"    => $prices

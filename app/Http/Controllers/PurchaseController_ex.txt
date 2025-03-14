@@ -1,5 +1,5 @@
 <?php
-
+//dengan ppn
 namespace App\Http\Controllers;
 
 use Exception;
@@ -45,6 +45,16 @@ class PurchaseController extends Controller
                         (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
                         * discount_percent / 100
                     )
+                    + (
+                        (
+                            (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
+                            - discount 
+                            - (
+                                (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id)
+                                * discount_percent / 100
+                            )
+                        ) * ppn / 100
+                    )
                 ) as grand_total
             '))
             ->addSelect(DB::raw('(
@@ -53,7 +63,7 @@ class PurchaseController extends Controller
                         (pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)
                     ) 
                     * (1 - IFNULL(p.discount_percent, 0) / 100) - IFNULL(p.discount, 0)
-                ))
+                ) * (1 + IFNULL(p.ppn, 0) / 100))
                 FROM purchase_detail_returns pdr
                 JOIN purchase_details pd ON pdr.purchase_detail_id = pd.id
                 JOIN purchases p ON pd.purchase_id = p.id

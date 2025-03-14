@@ -25,7 +25,7 @@ const Form = ({ title, purchase, previousUrl, suppliers, products, purchaseDetai
         }, 0);
         setTotalSum(total);
         const grandTotal = total - purchase.discount - (total * purchase.discount_percent / 100);
-        setGrandtotal(grandTotal);
+        setGrandtotal(grandTotal + grandTotal*purchase.ppn/100);
     }, [purchaseDetails]);
 
     

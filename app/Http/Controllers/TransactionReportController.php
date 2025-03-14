@@ -34,16 +34,6 @@ class TransactionReportController extends Controller
                         (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
                         * discount_percent / 100
                     )
-                    + (
-                        (
-                            (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
-                            - discount 
-                            - (
-                                (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
-                                * discount_percent / 100
-                            )
-                        ) * ppn / 100
-                    )
                 ) as grand_total
             '))
             ->withSum('transactionPayments', 'amount')

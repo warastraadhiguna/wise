@@ -118,7 +118,7 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                         {transactions.data.map((transaction, i) => (
                             <tr
                                 key={i}
-                                className={`bg-white btransaction-b dark:bg-gray-800 dark:btransaction-gray-700  ${transaction.deleted_at? "line-through bg-yellow-50" : "odd:bg-white even:bg-gray-200"}`}
+                                className={`bg-white btransaction-b dark:bg-gray-800 dark:btransaction-gray-700  ${transaction.deleted_at? "line-through bg-yellow-50" : ""}`}
                             >
                                 <td
                                     scope="row"
@@ -215,6 +215,11 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                                                 <td>{Number(transaction.discount_percent).toLocaleString() } %</td>
                                             </tr>
                                             <tr>
+                                                <td className="font-semibold">PPn</td>
+                                                <td>:</td>
+                                                <td>{Number(transaction.ppn).toLocaleString() } %</td>
+                                            </tr>  
+                                            <tr>
                                                 <td className="font-semibold">Grand Total</td>
                                                 <td>:</td>
                                                 <td>Rp. {Number(transaction.grand_total).toLocaleString() }</td>
@@ -230,23 +235,13 @@ const Index = ({ title, transactions, searchingTextProps,startDate, endDate, pay
                                                         ).toLocaleString()}
                                                     </td>
                                             </tr>
-                                            <tr>
-                                                <td className="font-semibold">Return</td>
-                                                <td>:</td>
-                                                <td>Rp.{" "}
-                                                    {Number(transaction.total_return_amount
-                                                    ).toLocaleString()}</td>
-                                            </tr>      
-                                            <tr>
-                                                <td className="font-semibold">PPn</td>
-                                                <td>:</td>
-                                                <td>{Number(transaction.ppn).toLocaleString() } %</td>
-                                            </tr>          
-                                            <tr>
-                                                <td className="font-semibold">DPP</td>
-                                                <td>:</td>
-                                                <td>Rp.{" "}{Number(Math.round(transaction.grand_total* (100 /(100+transaction.ppn)))).toLocaleString() }</td>
-                                            </tr>                                                 
+                                                <tr>
+                                                    <td className="font-semibold">Return</td>
+                                                    <td>:</td>
+                                                    <td>Rp.{" "}
+                                                        {Number(transaction.total_return_amount
+                                                        ).toLocaleString()}</td>
+                                                </tr>                 
                                         </tbody>
                                     </table>
                                 </td>                                

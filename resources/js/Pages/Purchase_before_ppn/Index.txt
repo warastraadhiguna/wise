@@ -124,7 +124,7 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
                         {purchases.data.map((purchase, i) => (
                             <tr
                                 key={i}
-                                className={`bg-white bpurchase-b dark:bg-gray-800 dark:bpurchase-gray-700  ${purchase.deleted_at? "line-through bg-yellow-50" : "odd:bg-white even:bg-gray-200"}`}
+                                className={`bg-white bpurchase-b dark:bg-gray-800 dark:bpurchase-gray-700  ${purchase.deleted_at? "line-through bg-yellow-50" : ""}`}
                             >
                                 <td
                                     scope="row"
@@ -277,10 +277,15 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
                                                 <td>{Number(purchase.discount_percent).toLocaleString() } %</td>
                                             </tr>
                                             <tr>
+                                                <td className="font-semibold">PPn</td>
+                                                <td>:</td>
+                                                <td>{Number(purchase.ppn).toLocaleString() } %</td>
+                                            </tr>  
+                                            <tr>
                                                 <td className="font-semibold">Grand Total</td>
                                                 <td>:</td>
                                                 <td>Rp. {Number(purchase.grand_total).toLocaleString() }</td>
-                                            </tr>                                               
+                                            </tr>         
                                             <tr>
                                                 <td className="font-semibold">
                                                     Paid
@@ -298,17 +303,7 @@ const Index = ({ title, purchases, searchingTextProps,startDate, endDate, paymen
                                                 <td>Rp.{" "}
                                                     {Number(purchase.total_return_amount
                                                     ).toLocaleString()}</td>
-                                            </tr>     
-                                            <tr>
-                                                <td className="font-semibold">PPn</td>
-                                                <td>:</td>
-                                                <td>{Number(purchase.ppn).toLocaleString() } %</td>
-                                            </tr>                                               
-                                            <tr>
-                                                <td className="font-semibold">DPP</td>
-                                                <td>:</td>
-                                                <td>Rp.{" "}{Number(Math.round(purchase.grand_total* (100 /(100+purchase.ppn)))).toLocaleString() }</td>
-                                            </tr>                                               
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </td>

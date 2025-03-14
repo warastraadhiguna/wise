@@ -1,6 +1,22 @@
 import React from 'react'
+import { useEffect } from 'react';
 
 const UpdateConfirmation = ({ setShowUpdateConfirmation, dataProps, handleUpdate, isProcessing  }) => {
+      useEffect(() => {
+          const handleKeyPress = (event) => {
+              if (event.key === "F2") {
+                handleUpdate(event);
+              }
+              if (event.key === "Escape") {
+                setShowUpdateConfirmation(false);
+              }            
+          };
+          document.addEventListener("keydown", handleKeyPress);
+          return () => {
+              document.removeEventListener("keydown", handleKeyPress);
+          };
+      }, []);
+  
   return (
       <section className='w-full fixed left-0 top-0 flex flex-col justify-center items-center h-screen'>
           
@@ -11,8 +27,8 @@ const UpdateConfirmation = ({ setShowUpdateConfirmation, dataProps, handleUpdate
                   <h4>Are you sure to update <strong>{dataProps.name ?? " the data"}?</strong>?</h4>
                   
                   <div className="flex gap-4 mt-4 justify-end items-center">
-                      <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded mr-1' onClick={handleUpdate} disabled={ isProcessing }>Yes</button>
-                      <button className='px-4 py-1  bg-red-600 text-white rounded-md  font-bold '  onClick={() => setShowUpdateConfirmation(false)} disabled={ isProcessing }>No</button>
+                      <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded mr-1' onClick={handleUpdate} disabled={ isProcessing }>Yes (F2)</button>
+                      <button className='px-4 py-1  bg-red-600 text-white rounded-md  font-bold '  onClick={() => setShowUpdateConfirmation(false)} disabled={ isProcessing }>No (ESC)</button>
                       
                   </div>
               </div>  

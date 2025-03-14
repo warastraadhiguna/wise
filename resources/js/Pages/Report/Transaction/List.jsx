@@ -16,10 +16,6 @@ const List = ({ title, transactions,startDate, endDate, paymentMethod, status, p
         paymentStatus: paymentStatus        
     });
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters({ ...filters, [name]: value });
-    };
 
     const handleFilterButton = (e) => {
         setIsProcessing(true);
@@ -158,26 +154,37 @@ const List = ({ title, transactions,startDate, endDate, paymentMethod, status, p
                                                 <td>{Number(transaction.discount_percent).toLocaleString() } %</td>
                                             </tr>
                                             <tr>
-                                                <td className="font-semibold">PPn</td>
-                                                <td>:</td>
-                                                <td>{Number(transaction.ppn).toLocaleString() } %</td>
-                                            </tr>  
-                                            <tr>
                                                 <td className="font-semibold">Grand Total</td>
                                                 <td>:</td>
                                                 <td>Rp. {Number(transaction.grand_total).toLocaleString() }</td>
                                             </tr>         
+                                            <tr>
+                                                <td className="font-semibold">
+                                                    Paid
+                                                </td>
+                                                <td>:</td>
+                                                <td>
+                                                    Rp.{" "}
+                                                    {Number(transaction.transaction_payments_sum_amount
+                                                    ).toLocaleString()}
+                                                </td>
+                                            </tr>      
+                                            <tr>
+                                                <td className="font-semibold">PPn</td>
+                                                <td>:</td>
+                                                <td>{Number(transaction.ppn).toLocaleString() } %</td>
+                                                </tr>         
                                                 <tr>
                                                     <td className="font-semibold">
-                                                        Paid
+                                                        DPP
                                                     </td>
                                                     <td>:</td>
                                                     <td>
                                                         Rp.{" "}
-                                                        {Number(transaction.transaction_payments_sum_amount
-                                                        ).toLocaleString()}
+                                                        {Number(Math.round(transaction.grand_total*100/(100+transaction.ppn
+                                                        ))).toLocaleString()}
                                                     </td>
-                                                </tr>                                               
+                                                </tr>                                                   
                                         </tbody>
                                     </table>
                                 </td>    

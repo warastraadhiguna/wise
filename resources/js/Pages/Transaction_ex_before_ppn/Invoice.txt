@@ -5,7 +5,6 @@ import { useEffect } from "react";
 const Invoice = ({ transaction, details }) => {
     const [totalSum, setTotalSum] = useState(0);
     const [grandtotal, setGrandtotal] = useState(0);
-    const [dpp, setDpp] = useState(0);
 
     const numberToWord = (angka) => {
     // Pastikan tipe data adalah number
@@ -71,14 +70,10 @@ const Invoice = ({ transaction, details }) => {
             transaction.discount -
             (total * transaction.discount_percent) / 100;
         setGrandtotal(
-            Math.round(grandTotal)
+            Math.round(grandTotal + (grandTotal * transaction.ppn) / 100)
         );
-
-        setDpp(Math.round((total -
-            transaction.discount -
-            (total * transaction.discount_percent) / 100) * (100 / (100 + transaction.ppn))));
     }, [details]);
-    // console.log(dpp);
+    // console.log(transaction);
     return (
         <div className="invoice-container">
             {/* Header & Info Toko */}
@@ -278,6 +273,15 @@ const Invoice = ({ transaction, details }) => {
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td className="label-cell">PPN</td>
+                                    <td className="colon-cell">:</td>
+                                    <td className="value-cell">
+                                        {Number(
+                                            (grandtotal * transaction.ppn) / 100
+                                        ).toLocaleString()}
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td className="label-cell">Total Bayar</td>
                                     <td className="colon-cell">:</td>
                                     <td className="value-cell">
@@ -285,7 +289,7 @@ const Invoice = ({ transaction, details }) => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="label-cell">{ transaction.payment_status.is_done === 0 ? "Uang Muka" : "Bayar" } </td>
+                                    <td className="label-cell">Bayar</td>
                                     <td className="colon-cell">:</td>
                                     <td className="value-cell">
                                         {Number(
@@ -294,39 +298,19 @@ const Invoice = ({ transaction, details }) => {
                                         ).toLocaleString()}
                                     </td>
                                 </tr>
-                                <tr  style={{ borderBottom: "2px solid black" }}>
-                                    <td className="label-cell">{ transaction.payment_status.is_done === 0 ? "Kurang" : "Kembali" }</td>
+                                <tr>
+                                    <td className="label-cell">Kembali</td>
                                     <td className="colon-cell">:</td>
                                     <td className="value-cell">
                                         {Number(
-                                            transaction.payment_status.is_done === 0? (grandtotal - transaction.transaction_payments[0]
-                                                .payment) :
-                                            (transaction.transaction_payments[0]
+                                            transaction.transaction_payments[0]
                                                 .payment -
                                                 transaction
                                                     .transaction_payments[0]
-                                                    .amount)
+                                                    .amount
                                         ).toLocaleString()}
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td className="label-cell">DPP</td>
-                                    <td className="colon-cell">:</td>
-                                    <td className="value-cell">
-                                        {Number(
-                                            dpp
-                                        ).toLocaleString()}
-                                    </td>
-                                </tr>         
-                                <tr>
-                                    <td className="label-cell">PPn</td>
-                                    <td className="colon-cell">:</td>
-                                    <td className="value-cell">
-                                        {Number(
-                                            grandtotal- dpp
-                                        ).toLocaleString()}
-                                    </td>
-                                </tr>                                
                             </tbody>
                         </table>
                     </div>

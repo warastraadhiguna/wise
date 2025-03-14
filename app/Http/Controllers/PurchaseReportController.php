@@ -26,7 +26,7 @@ class PurchaseReportController extends Controller
             'purchases' => Purchase::select('purchases.*', 'name', 'company_name')
             ->addSelect(DB::raw('(SELECT SUM(quantity * (price - discount - (price*discount_percent/100))) FROM purchase_details WHERE purchase_details.purchase_id = purchases.id) as total_amount'))
             ->with('orderUser', 'approvedOrderUser', 'storeBranch', 'purchaseUser', 'approvedUser', 'purchaseDetails', 'purchaseDetails.product', 'purchaseDetails.product.unit', 'supplier', 'paymentStatus')
-            ->withSum('purchasePayment', 'amount')
+            ->withSum('purchasePayments', 'amount')
             ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
             // ->where(function ($query) use ($searchingText) {
             //     $query->whereRaw('IFNULL(suppliers.name, "") LIKE ?', ["%$searchingText%"])

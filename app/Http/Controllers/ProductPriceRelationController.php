@@ -20,12 +20,12 @@ class ProductPriceRelationController extends Controller
                     'is_default' => $price['is_default'],
             ];
 
-            if (is_null($price['id'])) {
-                // Jika `id` bernilai null, lakukan create
-                ProductPriceRelation::create($data);
+            $price = ProductPriceRelation::where([['product_id', $price['product_id']], ['price_category_id', $price['price_category_id']]])->first();
+
+            if ($price) {
+                $price->update($data);
             } else {
-                // Jika `id` ada, lakukan update
-                ProductPriceRelation::where('id', $price['id'])->update($data);
+                ProductPriceRelation::create($data);
             }
         }
 

@@ -6,7 +6,7 @@ import Select from "react-select";
 const Payment = ({ setShowPaymentForm, dataProps, totalSum, errors, setIsProcessing, isProcessing, transaction, paymentStatusOptions, handleChange, selectedPaymentStatusOption, isEditNumberInput, auth, handleOptionChange, setIsEditNumberInput }) => {
 
     const calculateGrandTotal = () => {
-        return Math.round((totalSum - dataProps.discount - (totalSum * dataProps.discount_percent / 100)));
+        return Math.round((totalSum - dataProps.discount - (totalSum * dataProps.discount_percent / 100)) + ((totalSum - dataProps.discount - (totalSum * dataProps.discount_percent / 100)) * dataProps.ppn / 100));
     }
 
     const [showUpdateConfirmation, setShowUpdateConfirmation] = useState(false);  
@@ -219,10 +219,10 @@ const Payment = ({ setShowPaymentForm, dataProps, totalSum, errors, setIsProcess
                                     onBlur={() => setIsEditNumberInput("")}
                                     onChange={(event) => handleChange(event)}
                                     onKeyDown={(event) => {
-                                                if (event.key === 'Enter') {
-                                                    setShowUpdateConfirmation(true)
-                                                }
-                                            }}
+                                                            if (event.key === 'Enter') {
+                                                                setShowUpdateConfirmation(true)
+                                                            }
+                                                        }}                                    
                                     autoFocus 
                                 />
                             </div>

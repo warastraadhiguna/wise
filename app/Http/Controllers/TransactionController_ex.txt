@@ -47,6 +47,16 @@ class TransactionController extends Controller
                         (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
                         * discount_percent / 100
                     )
+                    + (
+                        (
+                            (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
+                            - discount 
+                            - (
+                                (SELECT SUM(quantity * (price - discount - (price * discount_percent / 100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id)
+                                * discount_percent / 100
+                            )
+                        ) * ppn / 100
+                    )
                 ) as grand_total
             '))
             ->addSelect(DB::raw('(
@@ -55,7 +65,7 @@ class TransactionController extends Controller
                         (td.price * (1 - IFNULL(td.discount_percent, 0) / 100)) - IFNULL(td.discount, 0)
                     ) 
                     * (1 - IFNULL(t.discount_percent, 0) / 100) - IFNULL(t.discount, 0)
-                ) )
+                ) * (1 + IFNULL(t.ppn, 0) / 100))
                 FROM transaction_detail_returns tdr
                 JOIN transaction_details td ON tdr.transaction_detail_id = td.id
                 JOIN transactions t ON td.transaction_id = t.id

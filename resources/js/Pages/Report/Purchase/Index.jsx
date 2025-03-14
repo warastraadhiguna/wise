@@ -380,18 +380,6 @@ const Index = ({ title, purchases,startDate, endDate, paymentMethod, status, pay
                                                 </tr>
                                                 <tr>
                                                     <td className="font-semibold">
-                                                        PPn
-                                                    </td>
-                                                    <td>:</td>
-                                                    <td>
-                                                        {Number(
-                                                            purchase.ppn
-                                                        ).toLocaleString()}{" "}
-                                                        %
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="font-semibold">
                                                         Grand Total
                                                     </td>
                                                     <td>:</td>
@@ -402,14 +390,7 @@ const Index = ({ title, purchases,startDate, endDate, paymentMethod, status, pay
                                                                 purchase.discount -
                                                                 (purchase.total_amount *
                                                                     purchase.discount_percent) /
-                                                                    100 +
-                                                                ((purchase.total_amount -
-                                                                    purchase.discount -
-                                                                    (purchase.total_amount *
-                                                                        purchase.discount_percent) /
-                                                                        100) *
-                                                                    purchase.ppn) /
-                                                                    100
+                                                                    100 
                                                         ).toLocaleString()}
                                                     </td>
                                                 </tr>
@@ -420,10 +401,38 @@ const Index = ({ title, purchases,startDate, endDate, paymentMethod, status, pay
                                                     <td>:</td>
                                                     <td>
                                                         Rp.{" "}
-                                                        {Number(purchase.purchase_payment_sum_amount
+                                                        {Number(purchase.purchase_payments_sum_amount
                                                         ).toLocaleString()}
                                                     </td>
-                                                </tr>                                                
+                                                </tr>     
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        PPn
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        {Number(
+                                                            purchase.ppn
+                                                        ).toLocaleString()}{" "}
+                                                        %
+                                                    </td>
+                                                </tr>       
+                                                <tr>
+                                                    <td className="font-semibold">
+                                                        DPP
+                                                    </td>
+                                                    <td>:</td>
+                                                    <td>
+                                                        Rp.{" "}
+                                                        {Number(Math.round(
+                                                            (purchase.total_amount -
+                                                                purchase.discount -
+                                                                (purchase.total_amount *
+                                                                    purchase.discount_percent) /
+                                                                    100 )*100/(100+purchase.ppn))
+                                                        ).toLocaleString()}
+                                                    </td>
+                                                </tr>                                                   
                                             </tbody>
                                         </table>
                                     </td>
