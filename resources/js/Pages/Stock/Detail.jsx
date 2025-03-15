@@ -2,6 +2,7 @@ import Pagination from '@/Components/Pagination';
 import SearchingTable from '@/Components/SearchingTable';
 import React from 'react'
 import { useState } from 'react';
+import dateFormat from "dateformat";
 
 const Detail = ({ detailStock, stockHistories, searchingTextProps}) => {
     const [perPage, setPerPage] = useState(stockHistories.per_page);
@@ -64,7 +65,7 @@ const Detail = ({ detailStock, stockHistories, searchingTextProps}) => {
                                         </td>
                                         <td className="px-6 py-4"> {stock.category}</td>
                                         <td className="px-6 py-4">{stock.quantity}</td>
-                                        <td className="px-6 py-4">{stock.date}</td>        
+                                        <td className="px-6 py-4">{dateFormat(stock.date, 'dd-mm-yyyy')}</td>        
                                     </tr>
                                 ))}
                         </tbody>
