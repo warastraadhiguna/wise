@@ -1,6 +1,6 @@
 import AdminLayout from "@/Layouts/AdminLayout";
 import React, {  useEffect, useState } from "react";
-import { FaMoneyBill } from "react-icons/fa";
+import { FaMoneyBill, FaSearch } from "react-icons/fa";
 import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
 import { router,usePage } from '@inertiajs/react';
@@ -111,6 +111,24 @@ const Index = ({ title, stocks, selectedStock, searchingTextProps, perPageProps,
                                                     className="cursor-pointer"
                                                     onClick={(event) => handleShowPriceForm(event,stock.id)}
                                                 />   
+                                                {" "}
+                                                <FaSearch
+                                                    color="blue"
+                                                    size={15}
+                                                    className="cursor-pointer"
+                                                    onClick={() => {
+                                                            const width = 800;
+                                                            const height = 600;
+                                                            const left = (window.screen.width / 2) - (width / 2);
+                                                            const top = (window.screen.height / 2) - (height / 2);
+
+                                                            const printWindow = window.open(
+                                                            `/stock/${stock.id}`,
+                                                            '_blank',
+                                                            `width=${width},height=${height},top=${top},left=${left}`
+                                                            );
+                                                        }}
+                                                />                                           
                                             </div>
                                         </td>
                                     </tr>

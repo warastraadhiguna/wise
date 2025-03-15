@@ -342,11 +342,15 @@ const Form = ({ title, transaction, previousUrl, customers, products, transactio
                                 </button> :
                                 <button
                                 className="print:hidden bg-blue-500 text-white font-bold py-1 px-2 mr-2 rounded hover:bg-blue-700"
-                                onClick={() => {
+                                    onClick={() => {
+                                        const width = 800;
+                                        const height = 600;
+                                        const left = (window.screen.width / 2) - (width / 2);
+                                        const top = (window.screen.height / 2) - (height / 2);                                    
                                         const printWindow = window.open(
-                                        `/transaction/${dataProps.id}/print`,
-                                        '_blank',
-                                        'width=800,height=600'
+                                            `/transaction/${dataProps.id}/print`,
+                                            '_blank',
+                                            `width=${width},height=${height},top=${top},left=${left}`
                                         );
                                         // Setelah halaman baru selesai dimuat, panggil print()
                                         printWindow.onload = function () {

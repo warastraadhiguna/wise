@@ -39,90 +39,91 @@ class Stock extends Model
         // and g.product_id=a.id and h.store_branch_id=$storeBranchId),0) as transaction_return_quantity,
 
         $sql = "SELECT 
-    a.id, 
-    a.product_category_id, 
-    a.brand_id, 
-    a.unit_id,
-    a.code, 
-    a.name, 
-    b.name AS product_category_name, 
-    c.name AS brand_name, 
-    d.name AS unit_name,
+                a.id, 
+                a.product_category_id, 
+                a.brand_id, 
+                a.unit_id,
+                a.code, 
+                a.name, 
+                b.name AS product_category_name, 
+                c.name AS brand_name, 
+                d.name AS unit_name,
 
-    -- 🔥 Perhitungan quantity berdasarkan storeBranchId
-    CASE 
-        WHEN $storeBranchId = 1 
-            THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0)
-        ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
-    END AS quantity,
+                -- 🔥 Perhitungan quantity berdasarkan storeBranchId
+                CASE 
+                    WHEN $storeBranchId = 1 
+                        THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0)
+                    ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
+                END AS quantity,
 
-    -- 🔥 Harga default
-    COALESCE((SELECT value FROM product_price_relations i WHERE i.is_default=1 AND i.product_id=a.id), 0) AS price,
+                -- 🔥 Harga default
+                COALESCE((SELECT value FROM product_price_relations i WHERE i.is_default=1 AND i.product_id=a.id), 0) AS price,
 
-    -- 🔥 Harga terakhir berdasarkan pembelian terbaru
-    COALESCE((
-        SELECT price FROM purchase_details j
-        LEFT JOIN purchases k ON j.purchase_id = k.id
-        WHERE j.product_id = a.id AND j.deleted_at IS NULL 
-            AND k.approve_purchase_date IS NOT NULL 
-        ORDER BY k.purchase_date DESC LIMIT 1
-    ), 0) AS last_price
+                -- 🔥 Harga terakhir berdasarkan pembelian terbaru
+                COALESCE((
+                    SELECT price FROM purchase_details j
+                    LEFT JOIN purchases k ON j.purchase_id = k.id
+                    WHERE j.product_id = a.id AND j.deleted_at IS NULL 
+                        AND k.approve_purchase_date IS NOT NULL 
+                    ORDER BY k.purchase_date DESC LIMIT 1
+                ), 0) AS last_price
 
-FROM products a
-LEFT JOIN product_categories b ON a.product_category_id = b.id
-LEFT JOIN brands c ON a.brand_id = c.id
-INNER JOIN units d ON a.unit_id = d.id
+            FROM products a
+            LEFT JOIN product_categories b ON a.product_category_id = b.id
+            LEFT JOIN brands c ON a.brand_id = c.id
+            INNER JOIN units d ON a.unit_id = d.id
 
--- 🔥 Subquery untuk mendapatkan purchase_quantity
-LEFT JOIN (
-    SELECT e.product_id, SUM(e.quantity) AS purchase_quantity 
-    FROM purchase_details e
-    LEFT JOIN purchases f ON e.purchase_id = f.id
-    WHERE f.deleted_at IS NULL 
-        AND f.approve_purchase_date IS NOT NULL
-    GROUP BY e.product_id
-) AS pq ON pq.product_id = a.id
+            -- 🔥 Subquery untuk mendapatkan purchase_quantity
+            LEFT JOIN (
+                SELECT e.product_id, SUM(e.quantity) AS purchase_quantity 
+                FROM purchase_details e
+                LEFT JOIN purchases f ON e.purchase_id = f.id
+                WHERE f.deleted_at IS NULL 
+                    AND f.approve_purchase_date IS NOT NULL
+                GROUP BY e.product_id
+            ) AS pq ON pq.product_id = a.id
 
--- 🔥 Subquery untuk mendapatkan distribution_quantity
-LEFT JOIN (
-    SELECT g.product_id, SUM(g.quantity) AS distribution_quantity
-    FROM distribution_details g
-    LEFT JOIN distributions h ON g.distribution_id = h.id
-    WHERE h.deleted_at IS NULL 
-        AND h.approve_date IS NOT NULL 
-        AND h.is_received = 1
-        AND ($storeBranchId != 1 OR h.store_branch_id = $storeBranchId)
-    GROUP BY g.product_id
-) AS dq ON dq.product_id = a.id
+            -- 🔥 Subquery untuk mendapatkan distribution_quantity
+            LEFT JOIN (
+                SELECT g.product_id, SUM(g.quantity) AS distribution_quantity
+                FROM distribution_details g
+                LEFT JOIN distributions h ON g.distribution_id = h.id
+                WHERE h.deleted_at IS NULL 
+                    AND h.approve_date IS NOT NULL 
+                    AND h.is_received = 1
+                    " . ($storeBranchId == 1 ? "" : " AND h.store_branch_id = $storeBranchId ") .
+                    "
+                GROUP BY g.product_id
+            ) AS dq ON dq.product_id = a.id
 
--- 🔥 Subquery untuk mendapatkan transaction_quantity
-LEFT JOIN (
-    SELECT g.product_id, SUM(g.quantity) AS transaction_quantity
-    FROM transaction_details g
-    LEFT JOIN transactions h ON g.transaction_id = h.id
-    WHERE h.deleted_at IS NULL 
-        AND h.approve_transaction_date IS NOT NULL
-        AND h.store_branch_id = $storeBranchId
-    GROUP BY g.product_id
-) AS tq ON tq.product_id = a.id
+            -- 🔥 Subquery untuk mendapatkan transaction_quantity
+            LEFT JOIN (
+                SELECT g.product_id, SUM(g.quantity) AS transaction_quantity
+                FROM transaction_details g
+                LEFT JOIN transactions h ON g.transaction_id = h.id
+                WHERE h.deleted_at IS NULL 
+                    AND h.approve_transaction_date IS NOT NULL
+                    AND h.store_branch_id = $storeBranchId
+                GROUP BY g.product_id
+            ) AS tq ON tq.product_id = a.id
 
--- 🔥 Subquery untuk mendapatkan mutation_quantity (hanya jika storeBranchId != 1)
-LEFT JOIN (
-    SELECT g.product_id, SUM(g.quantity) AS mutation_quantity
-    FROM mutation_details g
-    LEFT JOIN mutations h ON g.mutation_id = h.id
-    WHERE h.deleted_at IS NULL 
-        AND h.approve_date IS NOT NULL 
-        AND h.is_received = 1
-        AND h.store_branch_id = $storeBranchId
-    GROUP BY g.product_id
-) AS mq ON mq.product_id = a.id
+            -- 🔥 Subquery untuk mendapatkan mutation_quantity (hanya jika storeBranchId != 1)
+            LEFT JOIN (
+                SELECT g.product_id, SUM(g.quantity) AS mutation_quantity
+                FROM mutation_details g
+                LEFT JOIN mutations h ON g.mutation_id = h.id
+                WHERE h.deleted_at IS NULL 
+                    AND h.approve_date IS NOT NULL 
+                    AND h.is_received = 1
+                    " . ($storeBranchId == 1 ? "" : " AND h.store_branch_id = $storeBranchId") .
+                    " 
+                GROUP BY g.product_id
+            ) AS mq ON mq.product_id = a.id
 
-WHERE a.deleted_at IS NULL 
-  AND ($searchFilter)
-ORDER BY a.name
-LIMIT $perPage OFFSET $offset
-";
+            WHERE a.deleted_at IS NULL 
+            AND ($searchFilter)
+            ORDER BY a.name
+            LIMIT $perPage OFFSET $offset";
 
         // Konversi hasil query menjadi collection agar bisa digunakan method Collection
         $items = collect(DB::select($sql));
@@ -161,12 +162,12 @@ LIMIT $perPage OFFSET $offset
             where a.deleted_at is null AND ($searchFilter) ";
 
         $totalCount = DB::select($totalSql)[0]->aggregate;
-        $purchasing = new LengthAwarePaginator($items, $totalCount, $perPage, $page, [
+        $stock = new LengthAwarePaginator($items, $totalCount, $perPage, $page, [
             'path' => request()->url(),
             'query' => request()->query(),
         ]);
 
-        return $purchasing;
+        return $stock;
     }
 
     public static function getTransactionStock($searchingText, $perPage, $page, $storeBranchId = 1)
@@ -369,5 +370,59 @@ LIMIT $perPage OFFSET $offset
         }
 
         return "";
+    }
+
+    public static function getStockHistories($stockId, $searchingText, $storeBranchId = 1, $perPage = 10, $page = 1)
+    {
+        $offset = ($page - 1) * $perPage;
+
+        $sql = "select * from
+            (" .
+            ($storeBranchId == 1 ? "SELECT 'purchase' as category, CONCAT('+',e.quantity) as quantity, f.purchase_date as 'date'
+            FROM purchase_details e
+            LEFT JOIN purchases f ON e.purchase_id = f.id
+            WHERE f.deleted_at IS NULL and e.deleted_at is NULL
+            AND f.approve_purchase_date IS NOT NULL
+            and product_id=$stockId  union all" : "") ." 
+
+            SELECT 'distribution' as category,  CONCAT('". ($storeBranchId == 1 ? "-" : "+"). "',g.quantity) as quantity, h.distribution_date as 'date'
+            FROM distribution_details g
+            LEFT JOIN distributions h ON g.distribution_id = h.id
+            WHERE h.deleted_at IS NULL
+            AND h.approve_date IS NOT NULL
+            AND h.is_received = 1
+            " . ($storeBranchId == 1 ? "" : " AND h.store_branch_id = $storeBranchId") . "
+            AND product_id=$stockId
+
+            union all
+            SELECT 'transaction' as category, CONCAT('-',g.quantity) as quantity, h.transaction_date as 'date'
+            FROM transaction_details g
+            LEFT JOIN transactions h ON g.transaction_id = h.id
+            WHERE h.deleted_at IS NULL
+            AND h.approve_transaction_date IS NOT NULL
+            AND h.store_branch_id = $storeBranchId
+            AND product_id=$stockId
+
+            union all
+            SELECT 'mutation' as category, CONCAT('". ($storeBranchId == 1 ? "+" : "-"). "',g.quantity) AS mutation_quantity, h.mutation_date as 'date'
+            FROM mutation_details g
+            LEFT JOIN mutations h ON g.mutation_id = h.id
+            WHERE h.deleted_at IS NULL
+            AND h.approve_date IS NOT NULL
+            AND h.is_received = 1
+            AND product_id=$stockId
+            AND (h.store_branch_id ". ($storeBranchId == 1 ? "!" : ""). "= $storeBranchId)
+            ) as summary_view
+            where category like '%$searchingText%'
+            ORDER BY `date` desc";
+
+        // Konversi hasil query menjadi collection agar bisa digunakan method Collection
+        $items = collect(DB::select("$sql LIMIT $perPage OFFSET $offset"));
+        $totalCount = sizeOf(DB::select($sql));
+        $stock = new LengthAwarePaginator($items, $totalCount, $perPage, $page, [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
+        return $stock;
     }
 }

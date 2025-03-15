@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PriceCategory;
+use App\Models\Product;
 use App\Models\ProductPriceRelation;
 use App\Models\Stock;
 use Inertia\Inertia;
@@ -46,4 +47,22 @@ class StockController extends Controller
         return Inertia::render("Stock/Index", $data);
     }
 
+    public function show($id)
+    {
+
+        $perPage = Request()->input("perPage", 10);
+        $page = Request()->input('page', 1);
+        $searchingText = Request()->input("searchingText", "");
+        $searchingText ??= "";
+
+        $data = [
+            'title' => 'Stock List',
+            'stockHistories' => Stock::getStockHistories($id, $searchingText, session('selectedStoreBranchId'), $perPage, $page),
+            'pageProps' => $page,
+            'searchingTextProps' => $searchingText,
+            'detailStock' => Product::with("productCategory", "brand", "unit")->find($id)
+        ];
+
+        return Inertia::render("Stock/Detail", $data);
+    }
 }

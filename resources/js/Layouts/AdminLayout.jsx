@@ -9,7 +9,7 @@ import {
     AiOutlineRight,
 } from "react-icons/ai";
 import { FaRegUser, FaUsers, FaCriticalRole, FaBuilding } from "react-icons/fa";
-import { GrUserExpert } from "react-icons/gr";
+import { GrDomain, GrUserExpert } from "react-icons/gr";
 import { IoIosLogOut } from "react-icons/io";
 import { MdInventory, MdOutlineDomain, MdPolicy } from "react-icons/md";
 import { PiBasketFill } from "react-icons/pi";
@@ -110,7 +110,7 @@ const AdminLayout = ({ children, title }) => {
             icon: <MdInventory size={25} className="mr-1" />,
             text: "Inventories",
             componentLink:
-                "Stock/Index;Unit/Index;Brand/Index;Product/Index;ProductCategory/Index;Supplier/Index;Distribution/Index;DistributionReceipt/Index;Mutation/Index;MutationReceipt/Index",
+                "Stock/Index;Distribution/Index;DistributionReceipt/Index;Mutation/Index;MutationReceipt/Index",
             link: "#",
             subMenu: [
                 {
@@ -137,27 +137,6 @@ const AdminLayout = ({ children, title }) => {
                     text: "Mutation Receipt",
                     link: "/mutation-receipt",
                     subComponentLink: "MutationReceipt/Index",
-                },
-                { text: "Unit", link: "/unit", subComponentLink: "Unit/Index" },
-                {
-                    text: "Brand",
-                    link: "/brand",
-                    subComponentLink: "Brand/Index",
-                },
-                {
-                    text: "Product Category",
-                    link: "/product-category",
-                    subComponentLink: "ProductCategory/Index",
-                },
-                {
-                    text: "Product",
-                    link: "/product",
-                    subComponentLink: "Product/Index",
-                },
-                {
-                    text: "Supplier",
-                    link: "/supplier",
-                    subComponentLink: "Supplier/Index",
                 },
             ],
         },
@@ -192,6 +171,35 @@ const AdminLayout = ({ children, title }) => {
                 },
             ],
         },
+        {
+            icon: <GrDomain size={25} className="mr-1" />,
+            text: "Master Data",
+            componentLink: "Unit/Index;Brand/Index;Product/Index;ProductCategory/Index;Supplier/Index;",
+            link: "#",
+            subMenu: [
+                { text: "Unit", link: "/unit", subComponentLink: "Unit/Index" },
+                {
+                    text: "Brand",
+                    link: "/brand",
+                    subComponentLink: "Brand/Index",
+                },
+                {
+                    text: "Product Category",
+                    link: "/product-category",
+                    subComponentLink: "ProductCategory/Index",
+                },
+                {
+                    text: "Product",
+                    link: "/product",
+                    subComponentLink: "Product/Index",
+                },
+                {
+                    text: "Supplier",
+                    link: "/supplier",
+                    subComponentLink: "Supplier/Index",
+                },
+            ],
+        },        
     ];
     // console.log(component);
     return (
