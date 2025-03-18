@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\PriceCategory;
 use App\Models\Product;
-use App\Models\ProductPriceRelation;
 use App\Models\Stock;
 use Inertia\Inertia;
 

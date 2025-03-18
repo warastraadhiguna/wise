@@ -52,8 +52,8 @@ class Stock extends Model
                 -- 🔥 Perhitungan quantity berdasarkan storeBranchId
                 CASE 
                     WHEN $storeBranchId = 1 
-                        THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0)
-                    ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0)
+                        THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0) +   + COALESCE(stock_opname_quantity, 0) 
+                    ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0) + COALESCE(stock_opname_quantity, 0) 
                 END AS quantity,
 
                 -- 🔥 Harga default
@@ -119,6 +119,16 @@ class Stock extends Model
                     " 
                 GROUP BY g.product_id
             ) AS mq ON mq.product_id = a.id
+
+            -- 🔥 Subquery untuk mendapatkan stock_opname_quantity
+            LEFT JOIN (
+                SELECT sod.product_id, sum(sod.quantity) as stock_opname_quantity FROM stock_opname_details sod
+                inner join stock_opnames so on sod.stock_opname_id=so.id
+                WHERE so.deleted_at IS NULL
+                AND so.approve_stock_opname_date IS NOT NULL
+                AND so.store_branch_id = $storeBranchId
+                group by sod.product_id                
+            ) AS soq ON soq.product_id = a.id
 
             WHERE a.deleted_at IS NULL 
             AND ($searchFilter)
@@ -340,7 +350,17 @@ class Stock extends Model
             AND h.is_received = 1
             AND product_id=$stockId
             AND (h.store_branch_id ". ($storeBranchId == 1 ? "!" : ""). "= $storeBranchId)
+
+            union all
+            SELECT 'stock opname' as category,  sod.quantity as stock_opname_quantity, so.stock_opname_date as 'date' FROM stock_opname_details sod
+            inner join stock_opnames so on sod.stock_opname_id=so.id
+            WHERE so.deleted_at IS NULL
+            AND so.approve_stock_opname_date IS NOT NULL
+            AND so.store_branch_id = $storeBranchId
+            AND product_id=$stockId               
             ) as summary_view
+        
+
             where category like '%$searchingText%'
             ORDER BY `date` desc";
 

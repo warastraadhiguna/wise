@@ -5,6 +5,7 @@ use App\Http\Controllers\DistributionReceiptController;
 use App\Http\Controllers\MutationController;
 use App\Http\Controllers\MutationDetailController;
 use App\Http\Controllers\MutationReceiptController;
+use App\Http\Controllers\StockOpnameController;
 use App\Models\StoreBranch;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DistributionController;
 use App\Http\Controllers\PurchaseDetailReturnController;
 use App\Http\Controllers\PurchasePaymentController;
+use App\Http\Controllers\StockOpnameDetailController;
 use App\Http\Controllers\TransactionDetailReturnController;
 
 // Route::get('/', function () {
@@ -71,6 +73,9 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
     Route::resource('store-branch', StoreBranchController::class);
     Route::resource('order', OrderController::class);
     Route::resource('purchase', PurchaseController::class);
+
+    Route::resource('stock-opname', StockOpnameController::class);
+
     Route::resource('product', ProductController::class);
     Route::resource('stock', StockController::class);
 
@@ -79,6 +84,8 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     Route::resource('order-detail', OrderDetailController::class);
     Route::resource('purchase-detail', PurchaseDetailController::class);
+
+    Route::resource('stock-opname-detail', StockOpnameDetailController::class);
 
     Route::resource('transaction-detail', TransactionDetailController::class);
 

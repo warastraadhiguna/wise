@@ -7,23 +7,20 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class PurchaseDetail extends Model
+class StockOpnameDetail extends Model
 {
     use HasFactory;
     use Notifiable;
     use SoftDeletes;
 
     protected $fillable = [
-        'purchase_id',
-        'order_user_id',
+        'stock_opname_id',
         'user_id',
         'product_id',
-        'order_quantity',
         'quantity',
         'quantity_copy',
+        'last_quantity',
         'price',
-        'discount_percent',
-        'discount',
     ];
 
     public function orderUser()
@@ -41,8 +38,4 @@ class PurchaseDetail extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function purchaseDetailReturns()
-    {
-        return $this->hasMany(PurchaseDetailReturn::class);
-    }
 }

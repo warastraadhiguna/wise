@@ -309,28 +309,28 @@ class PurchaseController extends Controller
         return back()->with("success", 'Data berhasil dihapus' . ($deletedAt ? " SELAMANYA" : ""));
     }
 
-    private function generatePurchaseNumber()
-    {
-        $year = Carbon::now()->format('Y');
-        $month = Carbon::now()->format('m');
+    // private function generatePurchaseNumber()
+    // {
+    //     $year = Carbon::now()->format('Y');
+    //     $month = Carbon::now()->format('m');
 
-        $lastPurchase = Purchase::whereYear('purchase_date', $year)
-                        ->whereMonth('purchase_date', $month)
-                        ->orderBy('id', 'desc')
-                        ->first();
+    //     $lastPurchase = Purchase::whereYear('purchase_date', $year)
+    //                     ->whereMonth('purchase_date', $month)
+    //                     ->orderBy('id', 'desc')
+    //                     ->first();
 
-        if ($lastPurchase) {
-            $lastPurchaseNumber = explode('/', $lastPurchase->purchase_number);
-            $lastPurchaseSequence = (int) end($lastPurchaseNumber);
-            $newPurchaseSequence = $lastPurchaseSequence + 1;
-        } else {
-            $newPurchaseSequence = 1;
-        }
+    //     if ($lastPurchase) {
+    //         $lastPurchaseNumber = explode('/', $lastPurchase->purchase_number);
+    //         $lastPurchaseSequence = (int) end($lastPurchaseNumber);
+    //         $newPurchaseSequence = $lastPurchaseSequence + 1;
+    //     } else {
+    //         $newPurchaseSequence = 1;
+    //     }
 
-        $newPurchaseNumber = 'P/' . $year . '/' . $month . '/' . $newPurchaseSequence;
+    //     $newPurchaseNumber = 'P/' . $year . '/' . $month . '/' . $newPurchaseSequence;
 
-        return $newPurchaseNumber;
-    }
+    //     return $newPurchaseNumber;
+    // }
 
     private function addDetail(Request $request, $id, $productsId, $lastPrice)
     {

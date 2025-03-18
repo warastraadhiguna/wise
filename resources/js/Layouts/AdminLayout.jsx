@@ -110,7 +110,7 @@ const AdminLayout = ({ children, title }) => {
             icon: <MdInventory size={25} className="mr-1" />,
             text: "Inventories",
             componentLink:
-                "Stock/Index;Distribution/Index;DistributionReceipt/Index;Mutation/Index;MutationReceipt/Index",
+                "Stock/Index;Distribution/Index;DistributionReceipt/Index;Mutation/Index;MutationReceipt/Index;StockOpname/Index",
             link: "#",
             subMenu: [
                 {
@@ -118,6 +118,11 @@ const AdminLayout = ({ children, title }) => {
                     link: "/stock",
                     subComponentLink: "Stock/Index",
                 },
+                {
+                    text: "Stock Opname",
+                    link: "/stock-opname",
+                    subComponentLink: "StockOpname/Index",
+                },                
                 {
                     text: "Distribution",
                     link: "/distribution",
