@@ -286,11 +286,7 @@ const Detail = ({ purchase, products, purchaseDetails, setShowPaymentForm, total
                                                     Number(purchaseDetail.quantity).toLocaleString()}</td>
                                             {
                                                     purchase.approve_purchase_date &&                                             <td className="px-6 py-4">{purchaseDetail.purchase_detail_returns_sum_quantity ? Number(purchaseDetail.purchase_detail_returns_sum_quantity).toLocaleString() : 0}</td>    
-                                            }             
-                                            {
-                                                purchase.approve_purchase_date &&
-                                                <td className="px-6 py-4">{purchaseDetail.product ? purchaseDetail.product.unit.name : ""}</td>
-                                            }
+                                            }  
                                             <td className="px-6 py-4">{purchaseDetail.product ? purchaseDetail.product.unit.name : ""}</td>                                            
                                             <td className="px-6 py-4 cursor-pointer">{isEditing && purchaseDetail.id == dataProps.id ?
                                             <input

@@ -21,6 +21,7 @@ class StockController extends Controller
         $selectedProductId = Request()->input('selectedProductId');
 
         $selectedStock = Stock::getStockInfo($selectedProductId);
+
         $showInfoProps = false;
         if (session('perPage') != $perPage || session('searchingText') != $searchingText || session('page') != $page) {
             session()->put('perPage', $perPage);

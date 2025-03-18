@@ -9,7 +9,7 @@ const Info = ({ setShowInfo, selectedStock }) => {
   const [isEditNumberInput, setIsEditNumberInput] = useState("");
 
   // Ambil average_price dari selectedStock
-  const averagePrice = Number(selectedStock?.lastInfo?.average_price || 0);
+  const averagePrice = Number(selectedStock.average_price);
 
   const handlePriceChange = (event, index) => {
     const value = event.target.value;
@@ -60,7 +60,7 @@ const Info = ({ setShowInfo, selectedStock }) => {
               <input
                 type="text"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                value={`${selectedStock.lastInfo.code}`}
+                value={`${selectedStock.product.code}`}
                 disabled
               />
             </div>
@@ -73,7 +73,7 @@ const Info = ({ setShowInfo, selectedStock }) => {
               <input
                 type="text"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                value={`${selectedStock.lastInfo.name} (${selectedStock.lastInfo.unit_name})`}
+                value={`${selectedStock.product.name} (${selectedStock.product.unit.name})`}
                 disabled
               />
             </div>
@@ -88,7 +88,7 @@ const Info = ({ setShowInfo, selectedStock }) => {
               <input
                 type="text"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                value={`${Number(selectedStock.lastInfo.last_price).toLocaleString()}`}
+                value={`${Number(selectedStock.last_price).toLocaleString()}`}
                 disabled
               />
             </div>

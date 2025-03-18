@@ -54,6 +54,6 @@ class PurchaseReportController extends Controller
             'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
         ];
 
-        return Inertia::render("Report/Purchase/Index", $data);
+        return Inertia::render("Report/Purchase/List", $data);
     }
 }

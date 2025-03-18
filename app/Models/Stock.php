@@ -230,109 +230,35 @@ class Stock extends Model
         if (!$productId) {
             return null;
         }
-
-        $query = "SELECT
-            a.id, a.code, a.name,
-            d.name AS unit_name,
-            IFNULL(SUM(pi.quantity), NULL) AS quantity,
-            IFNULL(SUM(pi.adjusted_price * pi.quantity) / NULLIF(SUM(pi.quantity), 0), NULL) AS average_price,
-            (
-                SELECT 
-                    subquery.adjusted_price
-                FROM 
-                    (
-                        SELECT 
-                            pd.product_id,
-                            pd.quantity,
-                            (
-                                ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
-                                (1 - IFNULL(p.discount_percent, 0) / 100) -
-                                (
-                                    IFNULL(p.discount, 0) * 
-                                    (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
-                                        NULLIF(
-                                            (
-                                                SELECT 
-                                                    SUM(
-                                                        (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
-                                                    )
-                                                FROM 
-                                                    purchase_details pd_sub
-                                                WHERE 
-                                                    pd_sub.purchase_id = p.id
-                                                    AND pd_sub.deleted_at IS NULL
-                                            ),
-                                            0
-                                        )
-                                    )
-                                ) *
-                                (1 + IFNULL(p.ppn, 0) / 100)
-                            ) AS adjusted_price,
-                            p.purchase_date
-                        FROM 
-                            purchase_details pd
-                        INNER JOIN purchases p 
-                            ON pd.purchase_id = p.id
-                        WHERE 
-                            pd.deleted_at IS NULL
-                            AND p.deleted_at IS NULL
-                            AND p.approve_purchase_date IS NOT NULL
-                    ) AS subquery
-                WHERE 
-                    subquery.product_id = a.id
-                ORDER BY 
-                    subquery.purchase_date DESC
-                LIMIT 1
-            ) AS last_price
-        FROM
-            products a
-        LEFT JOIN (
-            SELECT 
-                pd.product_id,
-                pd.quantity,
-                (
-                    ((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) *
-                    (1 - IFNULL(p.discount_percent, 0) / 100) -
-                    (
-                        IFNULL(p.discount, 0) * 
-                        (((pd.price * (1 - IFNULL(pd.discount_percent, 0) / 100)) - IFNULL(pd.discount, 0)) /
-                            NULLIF(
-                                (
-                                    SELECT 
-                                        SUM(
-                                            (pd_sub.price * (1 - IFNULL(pd_sub.discount_percent, 0) / 100)) - IFNULL(pd_sub.discount, 0)
-                                        )
-                                    FROM 
-                                        purchase_details pd_sub
-                                    WHERE 
-                                        pd_sub.purchase_id = p.id
-                                        AND pd_sub.deleted_at IS NULL
-                                ),
-                                0
-                            )
-                        )
-                    ) *
-                    (1 + IFNULL(p.ppn, 0) / 100)
-                ) AS adjusted_price
-            FROM 
-                purchase_details pd
-            INNER JOIN purchases p 
+        //
+        $mainQuery = "SELECT
+                pd.id, pd.product_id,pd.quantity,
+                -- Total setelah semua diskon diterapkan
+                ((pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)))
+                * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+                - (COALESCE(p.discount, 0) * (
+                    ((pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)))
+                    * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+                    / (SELECT SUM(pd2.quantity * (pd2.price - COALESCE(pd2.discount, 0) - (pd2.price * COALESCE(pd2.discount_percent, 0) / 100))
+                        * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+                        FROM purchase_details pd2 WHERE pd2.purchase_id = p.id)
+                )) AS total_after_all_discounts
+            FROM purchase_details pd
+            INNER JOIN purchases p
                 ON pd.purchase_id = p.id
             WHERE
                 pd.deleted_at IS NULL
                 AND p.deleted_at IS NULL
-                AND p.approve_purchase_date IS NOT NULL
-        ) pi
-            ON pi.product_id = a.id
-        INNER JOIN units d
-            ON a.unit_id = d.id
-        WHERE
-            a.id = $productId
-        GROUP BY
-            a.id, d.name, a.code, a.name
-        ORDER BY
-            a.id;";
-        $stocks = DB::select($query);
+                AND p.approve_purchase_date IS NOT NULL and pd.product_id=$productId";
+
+        $query = "SELECT id, (total_after_all_discounts)/(quantity) as price from
+                ($mainQuery)as allData  order by id desc";
+
+        $allPurchaseDetailsByProductId = DB::select($query);
+
+        $query = "SELECT product_id, sum(total_after_all_discounts)/sum(quantity) as average_price from
+                ($mainQuery)as allData group by product_id";
+        $averagePriceByProductId = DB::select($query);
 
         $query = "SELECT b.id, ifNull(b.product_id,$productId) as product_id, a.id as price_category_id, a.name, ifNull(b.value, 0) as value, ifNull(b.is_default,0) as is_default FROM price_categories a left join product_price_relations b on a.id=b.price_category_id and product_id=$productId order by a.index ";
 
@@ -351,7 +277,9 @@ class Stock extends Model
         }
 
         return [
-            "lastInfo" => $stocks && sizeOf($stocks) > 0 ? $stocks[0] : null,
+            "product" => Product::withTrashed()->with('unit')->find($productId),
+            "average_price" => $averagePriceByProductId && sizeOf($averagePriceByProductId) > 0 ? $averagePriceByProductId[0]->average_price : 0,
+            "last_price" => $allPurchaseDetailsByProductId && sizeOf($allPurchaseDetailsByProductId) > 0 ? $allPurchaseDetailsByProductId[0]->price : 0,
             "prices"    => $prices
         ];
     }
@@ -426,3 +354,52 @@ class Stock extends Model
         return $stock;
     }
 }
+// this is how to calculate total_after_all_discounts
+// SELECT
+//     pd.product_id,
+//     pd.quantity,
+//     pd.price,
+//     pd.discount AS detail_discount_nominal,
+//     pd.discount_percent AS detail_discount_percent,
+//     p.discount AS purchase_discount_nominal,
+//     p.discount_percent AS purchase_discount_percent,
+
+//     -- Harga setelah diskon dari purchase_details
+//     (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)) AS price_after_detail_discount,
+
+//     -- Total harga sebelum diskon purchases diterapkan
+//     pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)) AS total_before_purchase_discount,
+
+//     -- Total setelah diskon persen dari purchases diterapkan
+//     (pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)))
+//     * (1 - (COALESCE(p.discount_percent, 0) / 100)) AS total_after_purchase_percent_discount,
+
+//     -- Proporsi diskon nominal berdasarkan harga setelah diskon persen
+//     (COALESCE(p.discount, 0) * (
+//         ((pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)))
+//         * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+//         / (SELECT SUM(pd2.quantity * (pd2.price - COALESCE(pd2.discount, 0) - (pd2.price * COALESCE(pd2.discount_percent, 0) / 100))
+//             * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+//             FROM purchase_details pd2 WHERE pd2.purchase_id = p.id)
+//     )) AS allocated_nominal_discount,
+
+//     -- Total setelah semua diskon diterapkan
+//     ((pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)))
+//     * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+//     - (COALESCE(p.discount, 0) * (
+//         ((pd.quantity * (pd.price - COALESCE(pd.discount, 0) - (pd.price * COALESCE(pd.discount_percent, 0) / 100)))
+//         * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+//         / (SELECT SUM(pd2.quantity * (pd2.price - COALESCE(pd2.discount, 0) - (pd2.price * COALESCE(pd2.discount_percent, 0) / 100))
+//             * (1 - (COALESCE(p.discount_percent, 0) / 100)))
+//             FROM purchase_details pd2 WHERE pd2.purchase_id = p.id)
+//     )) AS total_after_all_discounts
+
+
+
+// FROM purchase_details pd
+// INNER JOIN purchases p
+//     ON pd.purchase_id = p.id
+// WHERE
+//     pd.deleted_at IS NULL
+//     AND p.deleted_at IS NULL
+//     AND p.approve_purchase_date IS NOT NULL

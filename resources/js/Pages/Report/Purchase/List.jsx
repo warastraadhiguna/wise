@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import dateFormat from "dateformat";
 import { router } from "@inertiajs/react";
 
-const Index = ({ title, purchases,startDate, endDate, paymentMethod, status, paymentStatuses }) => {
+const List = ({ title, purchases,startDate, endDate, paymentMethod, status, paymentStatuses }) => {
     const url = window.location.pathname;    
 
     const [isProcessing, setIsProcessing] = useState(false);    
@@ -585,4 +585,4 @@ const Index = ({ title, purchases,startDate, endDate, paymentMethod, status, pay
     );
 };
 
-export default Index;
+export default List;

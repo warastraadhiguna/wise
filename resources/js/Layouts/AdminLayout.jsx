@@ -156,13 +156,13 @@ const AdminLayout = ({ children, title }) => {
         {
             icon: <BiSolidReport size={25} className="mr-1" />,
             text: "Report",
-            componentLink: "Report/Purchase/Index;Report/Transaction/List",
+            componentLink: "Report/Purchase/List;Report/Transaction/List",
             link: "#",
             subMenu: [
                 {
                     text: "Purchase",
                     link: "/purchase-report",
-                    subComponentLink: "Report/Purchase/Index",
+                    subComponentLink: "Report/Purchase/List",
                 },
                 {
                     text: "Transaction",
