@@ -361,4 +361,14 @@ class TransactionController extends Controller
             'details'     => $transaction->transactionDetails,
         ]);
     }
+
+    public function printReceipt($id)
+    {
+        $transaction = Transaction::with(['transactionDetails','transactionDetails.product','transactionDetails.product.unit',  'storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus', 'transactionPayments', 'transactionPayments.user'])->findOrFail($id);
+
+        return Inertia::render('Transaction/Receipt', [
+            'transaction' => $transaction,
+            'details'     => $transaction->transactionDetails,
+        ]);
+    }
 }

@@ -81,6 +81,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     Route::resource('transaction', TransactionController::class);
     Route::get('/transaction/{id}/print', [TransactionController::class, 'print'])->name('transaction.print');
+    Route::get('/transaction/{id}/print-receipt', [TransactionController::class, 'printReceipt'])->name('transaction.print-receipt');
 
     Route::resource('order-detail', OrderDetailController::class);
     Route::resource('purchase-detail', PurchaseDetailController::class);
