@@ -8,9 +8,8 @@ import Pagination from "@/Components/Pagination";
 import SearchingTable from "@/Components/SearchingTable";
 import { MdOutlineAddCircleOutline } from "react-icons/md";
 import dateFormat from "dateformat";
-import TransactionFilter from "@/Components/TransactionFilter";
 
-const Index = ({ title, stockOpnames, searchingTextProps,startDate, endDate}) => {
+const Index = ({ title, stockOpnames, searchingTextProps,startDate, endDate, status}) => {
     const url = window.location.pathname;  
     const { flash } = usePage().props;
 
@@ -25,18 +24,18 @@ const Index = ({ title, stockOpnames, searchingTextProps,startDate, endDate}) =>
     
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);  
-    const [selectedPurchase, setSelectedPurchase] = useState([]);
     const [filters, setFilters] = useState({
         startDate: startDate,
         endDate: endDate,
+        status: status,        
     });
 
-    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
+    const filterParameter = `${url}?startDate=${filters.startDate}&endDate=${filters.endDate}&status=${filters.status}&page=1&perPage=${perPage}&searchingText=${searchingText}`;
 
-    // const handleFilterChange = (e) => {
-    //     const { name, value } = e.target;
-    //     setFilters({ ...filters, [name]: value });
-    // };
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters({ ...filters, [name]: value });
+    };
 
     const handleFilterButton = (e) => {
         setIsProcessing(true);
@@ -73,7 +72,53 @@ const Index = ({ title, stockOpnames, searchingTextProps,startDate, endDate}) =>
 
     return (
         <AdminLayout title={title}>
-            {/* <TransactionFilter filters={filters} setFilters={setFilters} handleFilterButton={ handleFilterButton} />      */}
+            <div className="mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4  items-end">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input
+                            type="date"
+                            name="startDate"
+                            value={filters.startDate}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">End Date</label>
+                        <input
+                            type="date"
+                            name="endDate"
+                            value={filters.endDate}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                            name="status"
+                            value={filters.status}
+                            onChange={handleFilterChange}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        >
+                            <option value="">All</option>
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>                  
+                    <div>
+                        <button
+                            type="submit"
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            onClick={(e) => handleFilterButton(e)}
+                            disabled={isProcessing}
+                        >
+                            Filter
+                        </button>
+                    </div>
+                </div>
+            </div> 
 
             <div  className="flex items-center ml-1">
                 <MdOutlineAddCircleOutline
@@ -95,7 +140,7 @@ const Index = ({ title, stockOpnames, searchingTextProps,startDate, endDate}) =>
                             <th scope="col" className="px-6 py-3" width="2%">
                                 No
                             </th>                    
-                            <th scope="col" className="px-6 py-3" width="7%">
+                            <th scope="col" className="px-6 py-3">
                                 Store Branch
                             </th>                              
                             <th scope="col" className="px-6 py-3">

@@ -2,17 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use App\Models\Stock;
 use App\Models\StockOpname;
 use Illuminate\Http\Request;
-use App\Models\PaymentStatus;
 use App\Models\StockOpnameDetail;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 class StockOpnameController extends Controller
 {
@@ -26,9 +21,6 @@ class StockOpnameController extends Controller
         $startDate = Request()->input("startDate") ?? Carbon::now()->format('Y-m-d');
         $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
 
-        $paymentMethod = Request()->input("paymentMethod") ?? "";
-        $paymentStatus = Request()->input("paymentStatus") ?? "";
-
         $status = Request()->input("status") ?? "";
         $data = [
             'title' => 'Stock Opname List',
@@ -40,13 +32,6 @@ class StockOpnameController extends Controller
             ->when(!empty($status), function ($query) use ($status) {
                 return $status == "approved" ? $query->whereNotNull('approve_stock_opname_date') : $query->whereNull('approve_stock_opname_date');
             })
-            ->when($paymentStatus, function ($query) use ($paymentStatus) {
-                if ($paymentStatus == 'Paid') {
-                    $query->havingRaw('grand_total = stock_opname_payments_sum_amount');
-                } elseif ($paymentStatus == 'Unpaid') {
-                    $query->havingRaw('grand_total > stock_opname_payments_sum_amount');
-                }
-            })
             ->orderByRaw('CASE WHEN stock_opnames.approve_stock_opname_date IS NULL THEN 0 ELSE 1 END asc')
             ->orderBy('stock_opnames.stock_opname_date', 'desc')
             ->orderBy('stock_opnames.deleted_at')
@@ -56,9 +41,7 @@ class StockOpnameController extends Controller
                 'searchingText' => $searchingText,
                 'startDate' => $startDate,
                 'endDate' => $endDate,
-                'paymentMethod' => $paymentMethod,
                 'status' => $status,
-                'paymentStatus' => $paymentStatus,
             ]),
             'searchingTextProps' => $searchingText ?? "",
             'startDate' => $startDate,
@@ -134,7 +117,7 @@ class StockOpnameController extends Controller
         $data = [
             'title' => 'Edit StockOpname',
             'stockOpname' => $stockOpname,
-            'stockOpnameDetails' => StockOpnameDetail::with('product', 'product.unit')->where('stock_opname_id', '=', $id)->orderBy('created_at', 'desc')->get(),
+            'stockOpnameDetails' => StockOpnameDetail::with('product', 'product.unit')->selectRaw('*, last_quantity + quantity as real_quantity')->where('stock_opname_id', '=', $id)->orderBy('created_at', 'desc')->get(),
             'previousUrl' => session()->has('previousUrlStockOpname') ? session('previousUrlStockOpname') : "/stock-opname",
             'products' => $products,
         ];
@@ -221,7 +204,7 @@ class StockOpnameController extends Controller
             'stock_opname_id' => $id,
             'product_id' => $productsId,
             'user_id' => $request->user()->id,
-            'quantity' => 1,
+            'quantity' => 0,
             'last_quantity' => $lastQuantity,
             'price' => $lastPrice,
         ]);

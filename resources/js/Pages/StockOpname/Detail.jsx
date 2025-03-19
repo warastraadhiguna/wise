@@ -8,7 +8,7 @@ import { IoMdClose } from "react-icons/io";
 import UpdateConfirmation from "@/Components/UpdateConfirmation";
 import { GiReturnArrow } from "react-icons/gi";
 
-const Detail = ({ stockOpname, products, stockOpnameDetails, flash }) => {
+const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
     const [searchingText, setSearchingText] = useState(""); 
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);  
     const [showUpdateConfirmation, setShowUpdateConfirmation] = useState(false);      
@@ -22,17 +22,14 @@ const Detail = ({ stockOpname, products, stockOpnameDetails, flash }) => {
     const inputRef = useRef(null); 
 
     useEffect(() => {
-        // Function to handle keydown event
         const handleKeyDown = (event) => {
             if (event.key === "F2") { 
                 setShowUpdateConfirmation(true);
             }
         };
 
-        // Adding keydown event listener when the component is mounted
         window.addEventListener("keydown", handleKeyDown);
 
-        // Cleanup event listener when component is unmounted
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
@@ -123,7 +120,7 @@ const Detail = ({ stockOpname, products, stockOpnameDetails, flash }) => {
             [event.target.name]: event.target.value,
         }));
     };
-
+    
     return (
         <div className="w-full mx-auto mt-5">
             {showProducts && (
@@ -186,15 +183,17 @@ const Detail = ({ stockOpname, products, stockOpnameDetails, flash }) => {
                                         Current Qty
                                         </th> 
                                     <th scope="col" className="px-6 py-3">
-                                        Qty
-                                        </th>                               
+                                        Real Qty
+                                    </th>                               
                                     <th scope="col" className="px-6 py-3">
                                         Unit
                                     </th>
                                     <th scope="col" className="px-6 py-3">
                                         Price
-                                    </th>                                     
-                                    <th scope="col" className="px-6 py-3 print:hidden" width="5%">#</th>                                
+                                    </th>           
+                                    {
+                                        !stockOpname.approve_stock_opname_date && <th scope="col" className="px-6 py-3 print:hidden" width="5%">#</th>   
+                                    }                         
                                 </tr>
                             </thead>
                             <tbody>
@@ -216,50 +215,43 @@ const Detail = ({ stockOpname, products, stockOpnameDetails, flash }) => {
                                             " (" + stockOpnameDetail.product.code + ")" : ""
                                             }</td>
                                         <td  className="px-6 py-4">{Number(stockOpnameDetail.last_quantity).toLocaleString()}</td>   
-                                        {stockOpname.order_date &&
-                                            <td className="px-6 py-4 print:hidden">{Number(stockOpnameDetail.order_quantity).toLocaleString()}</td>}
-                                            <td className="px-6 py-4 cursor-pointer">
-                                            {stockOpname.order_date &&
-                                                <div className="hidden print:block">
-                                                    {stockOpnameDetail.order_quantity ? Number(stockOpnameDetail.order_quantity).toLocaleString() + ">>" : ""}
-                                                </div>
-                                            }
-                                            {isEditing && stockOpnameDetail.id == dataProps.id ?
-                                            <input
-                                                className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                                id="grid-minimum-stok"
-                                                type="number"
-                                                name="quantity"
-                                                step="0.1"
-                                                min="0"
-                                                autoFocus={true}
-                                                value={dataProps.quantity??0}
-                                                disabled={isProcessing}
-                                                onChange={(event) => handleChange(event)}
-                                                onKeyDown={handleEditingKeyPress}
-                                                required
-                                            />
-                                            :
-                                                    Number(stockOpnameDetail.quantity).toLocaleString()}</td>
-                                            <td className="px-6 py-4">{stockOpnameDetail.product ? stockOpnameDetail.product.unit.name : ""}</td>                                            
-                                            <td className="px-6 py-4 cursor-pointer">{isEditing && stockOpnameDetail.id == dataProps.id ?
-                                            <input
-                                                className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                                                id="grid-minimum-stok"
-                                                type="number"
-                                                name="price"
-                                                step="0.1"
-                                                min="0"
-                                                autoFocus={true}
-                                                value={dataProps.price??0}
-                                                disabled={isProcessing}
-                                                onChange={(event) => handleChange(event)}
-                                                onKeyDown={handleEditingKeyPress}
-                                                required
-                                            />
-                                            :
-                                                Number(stockOpnameDetail.price).toLocaleString()}</td>     
-                                                                                   
+                                        <td className="px-6 py-4 cursor-pointer">
+                                        {isEditing && stockOpnameDetail.id == dataProps.id ?
+                                        <input
+                                            className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                                            id="grid-minimum-stok"
+                                            type="number"
+                                            name="real_quantity"
+                                            step="0.1"
+                                            min="0"
+                                            autoFocus={true}
+                                            value={dataProps.real_quantity}
+                                            disabled={isProcessing}
+                                            onChange={(event) => handleChange(event)}
+                                            onKeyDown={handleEditingKeyPress}
+                                            required
+                                        />
+                                        :
+                                            Number(stockOpnameDetail.real_quantity).toLocaleString()}</td>
+                                        <td className="px-6 py-4">{stockOpnameDetail.product ? stockOpnameDetail.product.unit.name : ""}</td>                                            
+                                        <td className="px-6 py-4 cursor-pointer">{isEditing && stockOpnameDetail.id == dataProps.id ?
+                                        <input
+                                            className="appearance-none block w-full bg-white text-black border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+                                            id="grid-minimum-stok"
+                                            type="number"
+                                            name="price"
+                                            step="0.1"
+                                            min="0"
+                                            autoFocus={true}
+                                            value={dataProps.price??0}
+                                            disabled={isProcessing}
+                                            onChange={(event) => handleChange(event)}
+                                            onKeyDown={handleEditingKeyPress}
+                                            required
+                                        />
+                                        :
+                                                Number(stockOpnameDetail.price).toLocaleString()}
+                                            </td>     
                                             {!stockOpname.approve_stock_opname_date &&
                                             <td className="px-6 py-4">
                                                 {isEditing && stockOpnameDetail.id == dataProps.id ?
@@ -286,38 +278,8 @@ const Detail = ({ stockOpname, products, stockOpnameDetails, flash }) => {
 
                                             </td>
                                             }
-                                            {
-                                                stockOpname.approve_stock_opname_date && <td className="print:hidden">
-                                                    <GiReturnArrow
-                                                        title="return"
-                                                        size={20}
-                                                        onClick={() => {
-                                                            setShowPurchaseReturnList(true);
-                                                            setSelectedPurchaseDetail(stockOpnameDetail);
-                                                        }}
-                                                        className="cursor-pointer"     
-                                                        color={"red"}/> 
-                                                </td>
-                                            }
                                     </tr>
                                     ))}
-                                <tr>
-                                    <td></td>
-                                    <td></td>
-                                    {stockOpname.order_date &&
-                                        <td className="print:hidden"></td>
-                                    }
-                                    {
-                                        stockOpname.approve_stock_opname_date &&
-                                        <td></td>
-                                    }                                        
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                </tr>
                             </tbody>
                             </table> 
                         </div>     

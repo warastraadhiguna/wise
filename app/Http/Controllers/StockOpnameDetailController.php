@@ -28,12 +28,13 @@ class StockOpnameDetailController extends Controller
         $stockOpnameId = $stockOpnameDetail->stock_opname_id;
         $data = $request->validate(
             [
-                'quantity' => 'required|numeric',
+                'real_quantity' => 'required|numeric',
                 'price' => 'required|numeric',
             ]
         );
 
         $data['user_id'] = $request->user()->id;
+        $data['quantity'] = $request->input("real_quantity") - $request->input("last_quantity");
 
         $stockOpnameDetail->update($data);
 
