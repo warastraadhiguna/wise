@@ -68,7 +68,6 @@ class StockOpnameController extends Controller
     {
         $searchingText = Request()->input("searchingText") ?? "";
         $addDetail = Request()->input("addDetail");
-        $multiplier = Request()->input("multiplier");
         $perPage = Request()->input("perPage", 10);
         $page = Request()->input('page', 1);
 
@@ -100,18 +99,11 @@ class StockOpnameController extends Controller
                 }
 
                 return redirect()->to("stock-opname/$id/edit");
-            } elseif ($multiplier && $stockOpname->stockOpnameDetails) {
-                $detail = $stockOpname->stockOpnameDetails[0];
-                $detail->quantity *= intval($multiplier);
-
-                $detail->save();
             } elseif ($products && $products->total() == 0) {
                 return redirect()->to("stock-opname/$id/edit")->with("error", "Product tidak ditemukan");
             }
         } else {
-            $stockOpnameDetail->quantity = 1;
-            $stockOpnameDetail->price ??= 0;
-            $stockOpnameDetail->save();
+            return redirect()->to("stock-opname/$id/edit")->with("error", "Product sudah diinput");
         }
 
         $data = [

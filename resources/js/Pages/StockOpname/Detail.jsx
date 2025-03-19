@@ -6,7 +6,6 @@ import { FaRegTrashAlt } from "react-icons/fa";
 import DeleteConfirmation from "@/Components/DeleteConfirmation";
 import { IoMdClose } from "react-icons/io";
 import UpdateConfirmation from "@/Components/UpdateConfirmation";
-import { GiReturnArrow } from "react-icons/gi";
 
 const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
     const [searchingText, setSearchingText] = useState(""); 
@@ -18,7 +17,6 @@ const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
 
     const [showProducts, setShowProducts] = useState(products && products.total > 1);
     const url = window.location.pathname;
-    const [multiplier, setMultiplier] = useState("-1");
     const inputRef = useRef(null); 
 
     useEffect(() => {
@@ -52,9 +50,7 @@ const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             if(searchingText.length > 0)
-                router.get(`${url}?searchingText=${searchingText}&addDetail=1`);
-            else if (Number(multiplier) > 0)
-                router.get(`${url}?multiplier=${multiplier}`);                
+                router.get(`${url}?searchingText=${searchingText}&addDetail=1`);        
         } 
     };
 
@@ -73,20 +69,6 @@ const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
                 }
             });            
         } 
-    };
-
-    const handleSearch = (value) => {
-
-        if (searchingText.length == 0 && value == "*"){
-            setMultiplier("");             
-        }
-        else if (multiplier != "-1" && !isNaN(Number(value))) {
-            setMultiplier(multiplier + value);
-        }
-        else {
-            setMultiplier("-1");            
-            setSearchingText(value);
-        }       
     };
 
     const showEditingForm = (data) => {
@@ -161,7 +143,7 @@ const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
                                         placeholder='Search & Enter...'
                                         value={searchingText}
                                         autoFocus
-                                        onChange={(event) => handleSearch(event.target.value)}
+                                        onChange={(event) => setSearchingText(event.target.value)}
                                         onKeyDown={handleKeyPress}
                                         autoComplete="off"
                                         ref={inputRef}                                         
