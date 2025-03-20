@@ -26,7 +26,7 @@ class StockOpnameController extends Controller
             'title' => 'Stock Opname List',
             'stockOpnames' => StockOpname::withTrashed()
             ->select('stock_opnames.*')
-            ->with('storeBranch', 'user', 'approvedUser', 'stockOpnameDetails', 'stockOpnameDetails.product', 'stockOpnameDetails.product.unit')
+            ->with('storeBranch', 'user', 'approvedUser')
             ->whereNotNull('stock_opnames.user_id')
             ->whereBetween('stock_opname_date', [$startDate, $endDate])
             ->when(!empty($status), function ($query) use ($status) {

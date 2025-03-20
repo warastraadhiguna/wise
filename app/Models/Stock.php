@@ -19,10 +19,16 @@ class Stock extends Model
         $searchConditions = [];
 
         if (!empty($searchingText)) {
-            $searchingTextArray = explode(" ", $searchingText); // Memisahkan kata-kata
+            $searchingByID = "SEARCHING_BY_ID";
+            if (preg_match("/$searchingByID/", $searchingText)) {
+                $id = str_replace($searchingByID, '', $searchingText);
+                $searchConditions[] = "(a.id = '$id')";
+            } else {
+                $searchingTextArray = explode(" ", $searchingText); // Memisahkan kata-kata
 
-            foreach ($searchingTextArray as $text) {
-                $searchConditions[] = "(a.code LIKE '%$text%' OR a.name LIKE '%$text%' OR b.name LIKE '%$text%' OR c.name LIKE '%$text%')";
+                foreach ($searchingTextArray as $text) {
+                    $searchConditions[] = "(a.code LIKE '%$text%' OR a.name LIKE '%$text%' OR b.name LIKE '%$text%' OR c.name LIKE '%$text%')";
+                }
             }
         }
 
@@ -298,7 +304,7 @@ class Stock extends Model
     {
         $insufficientProductStock  = null;
         foreach ($details as $detail) {
-            if (self::getStock($detail->product->code, $storeBranchId)->items()[0]->quantity - $detail->quantity <= 0) {
+            if (self::getStock("SEARCHING_BY_ID". $detail->product->id, $storeBranchId)->items()[0]->quantity - $detail->quantity <= 0) {
                 $insufficientProductStock = $detail->product;
                 break;
             }
