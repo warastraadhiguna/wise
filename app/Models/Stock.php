@@ -304,7 +304,7 @@ class Stock extends Model
     {
         $insufficientProductStock  = null;
         foreach ($details as $detail) {
-            if (self::getStock("SEARCHING_BY_ID". $detail->product->id, $storeBranchId)->items()[0]->quantity - $detail->quantity <= 0) {
+            if (self::getStock("SEARCHING_BY_ID". $detail->product->id, $storeBranchId)->items()[0]->quantity - $detail->quantity < 0) {
                 $insufficientProductStock = $detail->product;
                 break;
             }
