@@ -22,6 +22,7 @@ const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === "F2") { 
+                setIsEditing(false);
                 setShowUpdateConfirmation(true);
             }
         };
@@ -129,7 +130,7 @@ const Detail = ({ stockOpname, products, stockOpnameDetails }) => {
                                     {stockOpnameDetails && stockOpnameDetails.length>0 &&
                                     <button
                                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-0 md:mr-4 mb-2 md:mb-0"
-                                        onClick={() =>setShowUpdateConfirmation(true)}
+                                            onClick={() => { setShowUpdateConfirmation(true); setIsEditing(false);}}
                                     >
                                         Approve Stock Opname (F2)
                                         </button>

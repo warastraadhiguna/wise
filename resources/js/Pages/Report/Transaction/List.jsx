@@ -30,7 +30,7 @@ const List = ({ title, transactions,startDate, endDate, paymentMethod, status, p
     // console.log(transactions);
     return (
         <AdminLayout title={title}>
-            <TransactionFilter filters={filters} setFilters={setFilters} paymentStatuses={paymentStatuses} handleFilterButton={ handleFilterButton} />         
+            { !isProcessing  && <TransactionFilter filters={filters} setFilters={setFilters} paymentStatuses={paymentStatuses} handleFilterButton={ handleFilterButton} />  }       
             <div className="relative overflow-x-auto">
                 <table className="w-full text-sm text-left rtl:text-right text-black dark:text-gray-400">
                     <thead className="text-xs text-black btransaction-b uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">

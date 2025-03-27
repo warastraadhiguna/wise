@@ -112,7 +112,7 @@ Route::middleware(['auth', 'checkrole'])->group(function () {
 
     Route::get('/purchase-report', [PurchaseReportController::class, 'index']);
     Route::get('/transaction-report', [TransactionReportController::class, 'index']);
-
+    Route::get('/product-transaction-report', [TransactionReportController::class, 'product']);
 });
 
 

@@ -5,8 +5,8 @@ import toast from "react-hot-toast";
 import Select from "react-select";
 
 export default function Dashboard({ title, storeBranchs, selectedStoreBranchId }) {
-    const { flash, errors, auth } = usePage().props;
-    
+    const { flash, errors, auth, appName } = usePage().props;
+
     const [isVisible, setIsVisible] = useState(false);
     
     const [dataProps, setDataProps] = useState({
@@ -64,7 +64,7 @@ export default function Dashboard({ title, storeBranchs, selectedStoreBranchId }
 
     return (
         <AdminLayout title={title}>
-            <h2 className="text-center text-xl font-semibold mb-5">Welcome to ~WISE~</h2>
+            <h2 className="text-center text-xl font-semibold mb-5" onDoubleClick={()=>{setIsVisible((prev) => !prev);}}>Welcome to ~{ appName }~</h2>
 
                     <div className="w-1/2 mx-auto bg-white border-2 border-gray-300 p-5 rounded-lg shadow-md max-w-lg">
                         <form className="w-full" onSubmit={(event) => actionForm(event)} autoComplete="off">

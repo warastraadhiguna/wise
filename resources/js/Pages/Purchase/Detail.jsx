@@ -30,6 +30,7 @@ const Detail = ({ purchase, products, purchaseDetails, setShowPaymentForm, total
         const handleKeyDown = (event) => {
             if (event.key === "F2") {
                 setShowPaymentForm(true);
+                setIsEditing(false);                
             }
         };
 
@@ -162,7 +163,7 @@ const Detail = ({ purchase, products, purchaseDetails, setShowPaymentForm, total
                                     {purchaseDetails && purchaseDetails.length>0 &&
                                     <button
                                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-0 md:mr-4 mb-2 md:mb-0"
-                                        onClick={() =>setShowPaymentForm(true)}
+                                            onClick={() => { setShowPaymentForm(true); setIsEditing(false); }}
                                     >
                                         Approve Purchasing (F2)
                                         </button>

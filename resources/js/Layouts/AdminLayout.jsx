@@ -174,6 +174,11 @@ const AdminLayout = ({ children, title }) => {
                     link: "/transaction-report",
                     subComponentLink: "Report/Transaction/List",
                 },
+                {
+                    text: "Transaction Product",
+                    link: "/product-transaction-report",
+                    subComponentLink: "Report/Transaction/Product",
+                },                
             ],
         },
         {

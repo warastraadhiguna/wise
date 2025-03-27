@@ -25,7 +25,7 @@ const Detail = ({ distribution, products, distributionDetails}) => {
         // Function to handle keydown event
         const handleKeyDown = (event) => {
             if (event.key === "F2") {
-                setShowUpdateConfirmation(true);
+                pay();
             }
         };
 
@@ -37,6 +37,11 @@ const Detail = ({ distribution, products, distributionDetails}) => {
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, []);    
+
+    const pay = () => {
+        setShowPaymentForm(true);
+        setIsEditing(false);     
+    }
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
@@ -155,7 +160,7 @@ const Detail = ({ distribution, products, distributionDetails}) => {
                                     {distributionDetails && distributionDetails.length>0 &&
                                     <button
                                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-0 md:mr-4 mb-2 md:mb-0"
-                                        onClick={() =>setShowUpdateConfirmation(true)}
+                                            onClick={() => { pay(); }}
                                     >
                                         Approve Transaction (F2)
                                         </button>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PaymentStatus;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
@@ -21,9 +22,9 @@ class TransactionReportController extends Controller
 
         $paymentStatus = Request()->input("paymentStatus") ?? "";
 
-
         $data = [
-            "title" => "Transaction Report",'transactions' => Transaction::select('transactions.*', 'name', 'company_name')
+            "title" => "Transaction Report",
+            'transactions' => Transaction::select('transactions.*', 'name', 'company_name')
             ->addSelect(DB::raw('(SELECT SUM(quantity * (price - discount - (price*discount_percent/100))) FROM transaction_details WHERE transaction_details.transaction_id = transactions.id) as total_amount'))
             ->with('storeBranch', 'transactionUser', 'approvedUser', 'customer', 'paymentStatus', 'transactionDetails', 'transactionDetails.product', 'transactionDetails.product.unit')
             ->addSelect(DB::raw('
@@ -70,5 +71,56 @@ class TransactionReportController extends Controller
         ];
 
         return Inertia::render("Report/Transaction/List", $data);
+    }
+
+    public function product()
+    {
+
+        $startDate = Request()->input("startDate") ?? Carbon::now()->format('Y-m-d');
+        $endDate = Request()->input("endDate") ?? Carbon::now()->format('Y-m-d');
+
+        $paymentMethod = Request()->input("paymentMethod") ?? "";
+        $status = Request()->input("status") ?? "";
+
+        $paymentStatus = Request()->input("paymentStatus") ?? "";
+        $soldProducts = TransactionDetail::select(
+            'product_id',
+            DB::raw('SUM(quantity) as total_quantity'),
+            DB::raw('SUM(quantity * (price - discount - (price * discount_percent / 100))) as total_sales')
+        )
+            ->with('product', 'product.unit')
+            ->whereHas('transaction', function ($query) use ($startDate, $endDate, $paymentMethod, $status, $paymentStatus) {
+                $query->whereBetween('transaction_date', [$startDate, $endDate])
+                      ->whereNotNull('approve_transaction_date');
+                if ($paymentMethod) {
+                    $query->where('payment_status_id', $paymentMethod);
+                }
+                if (!empty($status)) {
+                    $status == "approved"
+                        ? $query->whereNotNull('approve_transaction_date')
+                        : $query->whereNull('approve_transaction_date');
+                }
+                if ($paymentStatus) {
+                    if ($paymentStatus == 'Paid') {
+                        $query->havingRaw('grand_total = transaction_payments_sum_amount');
+                    } elseif ($paymentStatus == 'Unpaid') {
+                        $query->havingRaw('grand_total > transaction_payments_sum_amount');
+                    }
+                }
+            })
+            ->groupBy('product_id')
+            ->orderBy(DB::raw('SUM(quantity)'), 'desc')
+            ->get();
+
+        $data = [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'paymentMethod' => $paymentMethod,
+            'status' => $status,
+            'paymentStatus' => $paymentStatus,
+            'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
+            'soldProducts' => $soldProducts,
+        ];
+        return Inertia::render("Report/Transaction/Product", $data);
     }
 }

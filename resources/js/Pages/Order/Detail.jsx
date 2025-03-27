@@ -29,6 +29,28 @@ const Detail = ({ order, products, orderDetails }) => {
         } 
     };
 
+    useEffect(() => {
+        // Function to handle keydown event
+        const handleKeyDown = (event) => {
+            if (event.key === "F2") {
+                pay();                
+            }
+        };
+
+        // Adding keydown event listener when the component is mounted
+        window.addEventListener("keydown", handleKeyDown);
+
+        // Cleanup event listener when component is unmounted
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);    
+
+    const pay = () => {
+        setShowPaymentForm(true);
+        setIsEditing(false);     
+    }    
+
     const handleEditingKeyPress = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -135,7 +157,7 @@ const Detail = ({ order, products, orderDetails }) => {
                                     {orderDetails && orderDetails.length > 0 &&
                                         <button
                                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-4"
-                                            onClick={handleUpdateConfirmation}
+                                            onClick={() => { pay(); }}
                                         >
                                             Approve Order
                                         </button>

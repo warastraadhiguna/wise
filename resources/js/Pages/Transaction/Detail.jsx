@@ -32,7 +32,7 @@ const Detail = ({ transaction, products, transactionDetails, setShowPaymentForm,
         // Function to handle keydown event
         const handleKeyDown = (event) => {
             if (event.key === "F2") {
-                setShowPaymentForm(true);
+                pay();
             }
         };
 
@@ -44,6 +44,11 @@ const Detail = ({ transaction, products, transactionDetails, setShowPaymentForm,
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, []);    
+
+    const pay = () => {
+        setShowPaymentForm(true);
+        setIsEditing(false);     
+    }
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
@@ -158,7 +163,7 @@ const Detail = ({ transaction, products, transactionDetails, setShowPaymentForm,
                                     <button
                                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded mr-0 md:mr-4 mb-2 md:mb-0"
                                             // onClick={handleUpdateConfirmation}
-                                        onClick={() =>setShowPaymentForm(true)}
+                                            onClick={() => { pay(); }}
                                     >
                                         Approve Transaction (F2)
                                         </button>
