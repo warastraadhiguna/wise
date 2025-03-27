@@ -83,15 +83,19 @@ class TransactionReportController extends Controller
         $status = Request()->input("status") ?? "";
 
         $paymentStatus = Request()->input("paymentStatus") ?? "";
-        $soldProducts = TransactionDetail::select(
+        $category = Request()->input("category") ?? "";
+        $searchingText = Request()->input("searchingText") ?? "";
+
+        $soldProducts =
+        $category == "" ?
+        TransactionDetail::select(
             'product_id',
-            DB::raw('SUM(quantity) as total_quantity'),
-            DB::raw('SUM(quantity * (price - discount - (price * discount_percent / 100))) as total_sales')
+            DB::raw('SUM(quantity) as total_quantity')
         )
             ->with('product', 'product.unit')
             ->whereHas('transaction', function ($query) use ($startDate, $endDate, $paymentMethod, $status, $paymentStatus) {
                 $query->whereBetween('transaction_date', [$startDate, $endDate])
-                      ->whereNotNull('approve_transaction_date');
+                    ->whereNotNull('approve_transaction_date');
                 if ($paymentMethod) {
                     $query->where('payment_status_id', $paymentMethod);
                 }
@@ -108,17 +112,54 @@ class TransactionReportController extends Controller
                     }
                 }
             })
+            ->whereHas('product', function ($query) use ($searchingText) {
+                $query->where('name', 'like', "%{$searchingText}%")
+                    ->orWhere('code', 'like', "%{$searchingText}%");
+            })
             ->groupBy('product_id')
             ->orderBy(DB::raw('SUM(quantity)'), 'desc')
+            ->get() :
+        TransactionDetail::select(
+            'product_id',
+            'quantity  as total_quantity',
+            'transaction_id'
+        )
+            ->with('product', 'product.unit', 'transaction')
+            ->whereHas('transaction', function ($query) use ($startDate, $endDate, $paymentMethod, $status, $paymentStatus) {
+                $query->whereBetween('transaction_date', [$startDate, $endDate])
+                    ->whereNotNull('approve_transaction_date');
+                if ($paymentMethod) {
+                    $query->where('payment_status_id', $paymentMethod);
+                }
+                if (!empty($status)) {
+                    $status == "approved"
+                        ? $query->whereNotNull('approve_transaction_date')
+                        : $query->whereNull('approve_transaction_date');
+                }
+                if ($paymentStatus) {
+                    if ($paymentStatus == 'Paid') {
+                        $query->havingRaw('grand_total = transaction_payments_sum_amount');
+                    } elseif ($paymentStatus == 'Unpaid') {
+                        $query->havingRaw('grand_total > transaction_payments_sum_amount');
+                    }
+                }
+            })
+            ->whereHas('product', function ($query) use ($searchingText) {
+                $query->where('name', 'like', "%{$searchingText}%")
+                    ->orWhere('code', 'like', "%{$searchingText}%");
+            })
             ->get();
 
         $data = [
+            'title' => 'Product Transaction Report',
             'startDate' => $startDate,
             'endDate' => $endDate,
             'paymentMethod' => $paymentMethod,
             'status' => $status,
             'paymentStatus' => $paymentStatus,
             'paymentStatuses' => PaymentStatus::orderBy('index')->get(),
+            'category' => $category,
+            'searchingTextProps' => $searchingText ?? "",
             'soldProducts' => $soldProducts,
         ];
         return Inertia::render("Report/Transaction/Product", $data);

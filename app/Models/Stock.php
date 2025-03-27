@@ -58,8 +58,10 @@ class Stock extends Model
                 -- 🔥 Perhitungan quantity berdasarkan storeBranchId
                 CASE 
                     WHEN $storeBranchId = 1 
-                        THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0) +   + COALESCE(stock_opname_quantity, 0) 
-                    ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0) + COALESCE(stock_opname_quantity, 0) 
+                        THEN COALESCE(purchase_quantity, 0) - COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) + COALESCE(mutation_quantity, 0) +   COALESCE(stock_opname_quantity, 0) - COALESCE(pdrq.purchase_detail_return_quantity, 0)
+                 + COALESCE(tdrq.transaction_detail_return_quantity, 0)
+                    ELSE COALESCE(distribution_quantity, 0) - COALESCE(transaction_quantity, 0) - COALESCE(mutation_quantity, 0) + COALESCE(stock_opname_quantity, 0) - COALESCE(pdrq.purchase_detail_return_quantity, 0)
+                 + COALESCE(tdrq.transaction_detail_return_quantity, 0)
                 END AS quantity,
 
                 -- 🔥 Harga default
@@ -135,6 +137,29 @@ class Stock extends Model
                 AND so.store_branch_id = $storeBranchId
                 group by sod.product_id                
             ) AS soq ON soq.product_id = a.id
+
+            -- Subquery untuk purchase_detail_returns
+            LEFT JOIN (
+                SELECT pd.product_id, SUM(pdr.quantity) AS purchase_detail_return_quantity
+                FROM purchase_detail_returns pdr
+                INNER JOIN purchase_details pd ON pdr.purchase_detail_id = pd.id
+                INNER JOIN purchases f ON pd.purchase_id = f.id
+                WHERE f.deleted_at IS NULL 
+                    AND f.approve_purchase_date IS NOT NULL                
+                GROUP BY pd.product_id
+            ) AS pdrq ON pdrq.product_id = a.id
+
+            -- Subquery untuk transaction_detail_returns
+            LEFT JOIN (
+                SELECT td.product_id, SUM(tdr.quantity) AS transaction_detail_return_quantity
+                FROM transaction_detail_returns tdr
+                INNER JOIN transaction_details td ON tdr.transaction_detail_id = td.id
+                INNER JOIN transactions h ON td.transaction_id = h.id
+                WHERE h.deleted_at IS NULL 
+                    AND h.approve_transaction_date IS NOT NULL
+                    AND h.store_branch_id = $storeBranchId                
+                GROUP BY td.product_id
+            ) AS tdrq ON tdrq.product_id = a.id
 
             WHERE a.deleted_at IS NULL 
             AND ($searchFilter)
@@ -358,12 +383,33 @@ class Stock extends Model
             AND (h.store_branch_id ". ($storeBranchId == 1 ? "!" : ""). "= $storeBranchId)
 
             union all
-            SELECT 'stock opname' as category,  sod.quantity as stock_opname_quantity, so.stock_opname_date as 'date' FROM stock_opname_details sod
+            SELECT 'stock opname' as category,  CONCAT('+',sod.quantity) as quantity, so.stock_opname_date as 'date' FROM stock_opname_details sod
             inner join stock_opnames so on sod.stock_opname_id=so.id
             WHERE so.deleted_at IS NULL
             AND so.approve_stock_opname_date IS NOT NULL
             AND so.store_branch_id = $storeBranchId
-            AND product_id=$stockId               
+            AND product_id=$stockId      
+            
+            
+            union all
+                SELECT 'purchase return' as category,  CONCAT('-',pdr.quantity) AS quantity, pdr.created_at as 'date'
+                FROM purchase_detail_returns pdr
+                INNER JOIN purchase_details pd ON pdr.purchase_detail_id = pd.id
+                INNER JOIN purchases f ON pd.purchase_id = f.id
+                WHERE f.deleted_at IS NULL 
+                    AND f.approve_purchase_date IS NOT NULL                
+                AND product_id=$stockId     
+
+            union all    
+                SELECT 'transaction return' as category, CONCAT('+',tdr.quantity) AS quantity, tdr.created_at as 'date'
+                FROM transaction_detail_returns tdr
+                INNER JOIN transaction_details td ON tdr.transaction_detail_id = td.id
+                INNER JOIN transactions h ON td.transaction_id = h.id
+                WHERE h.deleted_at IS NULL 
+                    AND h.approve_transaction_date IS NOT NULL
+                    AND h.store_branch_id = $storeBranchId                
+                AND product_id=$stockId     
+
             ) as summary_view
         
 

@@ -107,7 +107,7 @@ class StockOpnameController extends Controller
         }
 
         $data = [
-            'title' => 'Edit StockOpname',
+            'title' => 'Edit Stock Opname',
             'stockOpname' => $stockOpname,
             'stockOpnameDetails' => StockOpnameDetail::with('product', 'product.unit')->selectRaw('*, last_quantity + quantity as real_quantity')->where('stock_opname_id', '=', $id)->orderBy('created_at', 'desc')->get(),
             'previousUrl' => session()->has('previousUrlStockOpname') ? session('previousUrlStockOpname') : "/stock-opname",
@@ -119,7 +119,7 @@ class StockOpnameController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $stockOpname = StockOpname::withTrashed()->findOrFail($id);
+        $stockOpname = StockOpname::withTrashed()->with('stockOpnameDetails')->findOrFail($id);
 
 
         if ($stockOpname->deleted_at) {
@@ -130,6 +130,13 @@ class StockOpnameController extends Controller
 
         $approveParameter = Request()->input("approveParameter");
         if ($approveParameter) {
+            foreach ($stockOpname->stockOpnameDetails as $detail) {
+                if ($detail->price == 0) {
+                    redirect()->to("stock-opname/$stockOpname->id/edit")->with("error", 'Data gagal diapprove. Harga stock, dilarang bernilai 0.');
+                    return;
+                }
+            }
+
             $data['approved_user_id'] = $request->user()->id;
             $data['approve_stock_opname_date'] =  Carbon::now();
             $stockOpname->update($data);
